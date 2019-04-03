@@ -40,6 +40,11 @@ namespace SnakeMultiplayer.Services
         {
             return (x, y);
         }
+
+        public override string ToString()
+        {
+            return String.Format($"({x};{y})");
+        }
     }
     
     public enum CoordDirection

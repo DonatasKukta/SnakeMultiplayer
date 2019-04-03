@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace SnakeMultiplayer.Services
 {
-    public class CustomHostedService : IHostedService
+    public class GameServerService : IHostedService
     {
         LinkedList<Message> sharedResource = new LinkedList<Message>();
 

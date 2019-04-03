@@ -40,7 +40,7 @@ namespace SnakeMultiplayer.Controllers
             return View();
         }
         [HttpPost]
-        public IActionResult Messages(string Message, [FromServices]CustomHostedService service)
+        public IActionResult Messages(string Message, [FromServices]GameServerService service)
         {
             //await service.AddMessage(Message);
             service.AddMessage("userxd",Message);
