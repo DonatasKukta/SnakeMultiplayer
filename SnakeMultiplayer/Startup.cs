@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -49,6 +50,9 @@ namespace SnakeMultiplayer
                 app.UseHsts();
             }
 
+            app.UseWebSockets();
+            app.UseMiddleware<WebSocketMiddleware>();
+            
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
