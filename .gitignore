@@ -1,5 +1,8 @@
+
 bin/
 obj/
 .vs/
 SnakeMultiplayer/wwwroot/
+
 appsettings.json
+*.csproj.user
