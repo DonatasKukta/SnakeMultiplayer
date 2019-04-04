@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +16,7 @@ namespace SnakeMultiplayer
     public class WebSocketMiddleware
     {
         private readonly RequestDelegate _next;
-        
+
         private readonly GameServerService service;
 
         public WebSocketMiddleware(RequestDelegate next)
@@ -30,7 +31,7 @@ namespace SnakeMultiplayer
                 if (httpContext.WebSockets.IsWebSocketRequest)
                 {
                     WebSocket webSocket = await httpContext.WebSockets.AcceptWebSocketAsync();
-                    // Do Actions with web socket here!
+                    await Echo(httpContext, webSocket);
                 }
                 else
                 {
@@ -41,6 +42,20 @@ namespace SnakeMultiplayer
             {
                 await _next(httpContext);
             }
+        }
+
+
+        private async Task Echo(HttpContext context, WebSocket webSocket)
+        {
+            var buffer = new byte[1024 * 4];
+            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            while (!result.CloseStatus.HasValue)
+            {
+                await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
+
+                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            }
+            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
         }
     }
 
