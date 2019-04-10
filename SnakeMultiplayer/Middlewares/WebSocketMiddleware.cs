@@ -16,8 +16,7 @@ namespace SnakeMultiplayer
     public class WebSocketMiddleware
     {
         private readonly RequestDelegate _next;
-
-        private readonly GameServerService service;
+        
 
         public WebSocketMiddleware(RequestDelegate next)
         {
@@ -31,7 +30,8 @@ namespace SnakeMultiplayer
                 if (httpContext.WebSockets.IsWebSocketRequest)
                 {
                     WebSocket webSocket = await httpContext.WebSockets.AcceptWebSocketAsync();
-                    await Echo(httpContext, webSocket);
+                    await Echo(httpContext, webSocket, service);
+                    
                 }
                 else
                 {
@@ -45,12 +45,13 @@ namespace SnakeMultiplayer
         }
 
 
-        private async Task Echo(HttpContext context, WebSocket webSocket)
+        private async Task Echo(HttpContext context, WebSocket webSocket, [FromServices]GameServerService service)
         {
             var buffer = new byte[1024 * 4];
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             while (!result.CloseStatus.HasValue)
             {
+                await service.AddMessage("x", "Prideta");
                 await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
 
                 result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);

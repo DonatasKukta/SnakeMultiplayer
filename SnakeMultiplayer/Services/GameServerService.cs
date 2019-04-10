@@ -10,7 +10,7 @@ namespace SnakeMultiplayer.Services
     public class GameServerService : IHostedService
     {
         LinkedList<Message> sharedResource = new LinkedList<Message>();
-
+        
         public Task StartAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
@@ -23,6 +23,11 @@ namespace SnakeMultiplayer.Services
         public Task AddMessage(string user, string message)
         {
             sharedResource.AddLast(new Message(user, message));
+            return Task.CompletedTask;
+        }
+        public Task AddMessage(string message)
+        {
+            sharedResource.AddLast(new Message(string.Empty, message));
             return Task.CompletedTask;
         }
 
