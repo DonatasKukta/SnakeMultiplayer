@@ -2,15 +2,22 @@
 
     var Canvas = document.getElementById("Canvas");
     var CanvasContext = Canvas.getContext("2d");
-    window.addEventListener('resize', ResizeCanvas, false);
+    window.addEventListener('resize', onResize, false);
+    // Constants that depend on current screen size 
+    var length;
+    var TLborder;
+    var BRborder;
 
     var canvasWidth;
     var canvasHeight;
-    var contextWidth;
-    var contextHeight;
 
-    ResizeCanvas();
-    DrawCanvas();
+    //Initialization of page:
+    onResize();
+
+    function onResize() {
+        ResizeCanvas();
+        DrawCanvas();
+    }
 
     function ResizeCanvas() {
         var size = -1;
@@ -23,17 +30,22 @@
         Canvas.width = size;
         Canvas.height = size;
         console.log("canvas params: ", Canvas.width, Canvas.height);
-        DrawCanvas();
+        length = size;
+        console.log("Length:", length);
+        TLborder = length * 0.1 * 0.5;
+        BRborder = length - (TLborder *2);
+        //return size;
     }
 
     function DrawCanvas() {
 
+        console.log(TLborder, BRborder);
         CanvasContext.fillStyle = "yellow";
-        CanvasContext.fillRect(0, 0, Canvas.width, Canvas.height);
+        CanvasContext.fillRect(0, 0, length, length);
         CanvasContext.stroke();
 
         CanvasContext.fillStyle = "blue";
-        CanvasContext.fillRect(50, 50, Canvas.width - 100, Canvas.height - 100);
+        CanvasContext.fillRect(TLborder, TLborder, BRborder, BRborder);
         CanvasContext.stroke();
 
         DrawBorder();
