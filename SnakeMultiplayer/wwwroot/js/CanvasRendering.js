@@ -1,8 +1,8 @@
 ﻿(function () {
     //DATA STRUCTURES
-    class Cell {
+    class CellParameter {
         constructor(length, innerColor, outlineColor) {
-            this.length = length,
+            this.size = length,
                 this.innerColor = innerColor,
                 this.outlineColor = outlineColor
         }
@@ -16,11 +16,15 @@
     var TLborder;
     var BRborder;
     var margin;
-    var cell = new Cell(-1, "red", "green");
+    var baseCell = new CellParameter(-1, "red", "green");
+
+    var cellCount = 18;
+    var relMarginSize = 0.1;
 
     //Initialization of page:
     onResize();
-    
+    //-----------------------
+
     function onResize() {
         ClearCanvas();
         ResizeCanvas();
@@ -31,30 +35,46 @@
     function ResizeCanvas() {
         var canvasLength = -1;
         if (window.innerWidth > window.innerHeight) {
-            canvasLength = window.innerHeight - 10;
+            canvasLength = window.innerHeight - 5;
         } else {
-            canvasLength = window.innerWidth - 10;
+            canvasLength = window.innerWidth - 5;
         }
+        canvasLength = getCanvasLength(canvasLength);
+        SetCanvasVariables(canvasLength);
+    }
+
+    function SetCanvasVariables(canvasLength) {
         Canvas.width = canvasLength;
         Canvas.height = canvasLength;
         console.log("canvas params: ", Canvas.width, Canvas.height);
-        setCanvasVariables(canvasLength);
+        setOtherCanvasVariables(canvasLength);
     }
 
+    /*
+        Returns corrected canvas length, so that cell size would be whole number.
+    */
+    function getCanvasLength(currentLength) {
+        var arenaLength = currentLength * (1-(relMarginSize));
+        cellSize = arenaLength / cellCount;
+        return (Math.floor(cellSize) * cellCount) / (1 - (relMarginSize))
+    }
+    
     function ClearCanvas() {
         CanvasContext.clearRect(0, 0, Canvas.width, Canvas.height);
     }
-    
-    function setCanvasVariables(canvasLength) {
+
+    function setOtherCanvasVariables(canvasLength) {
         length = canvasLength;
         console.log("Length:", length);
 
         margin = length * 0.1;
 
-        TLborder = length * 0.1 * 0.5;
+        TLborder = length * relMarginSize * 0.5;
         BRborder = length - (TLborder * 2);
+        console.log("Real arena length:", BRborder-TLborder);
 
-        cell.length = length * 0.1;
+        baseCell.size = length * 0.05;
+        console.log("Cell Length: ", baseCell.size);
     }
 
     function DrawCanvas() {
@@ -86,14 +106,14 @@
         var x = TLborder;
         var y = TLborder;
 
-        while (x < BRborder) {
-            while (y < BRborder) {
-                DrawFillRenctangle(x, y, cell.length, "red");
-                DrawOutlineRectangle(x, y, cell.length, "green");
-                y += cell.length;
+        while (x <= BRborder) {
+            while (y <= BRborder) {
+                DrawFillRenctangle(x, y, baseCell.size, "red");
+                DrawOutlineRectangle(x, y, baseCell.size, "green");
+                y += baseCell.size;
             }
             y = TLborder;
-            x += cell.length;
+            x += baseCell.size;
         }
     }
 
