@@ -1,12 +1,48 @@
 ﻿(function () {
     //DATA STRUCTURES
-    class CellParameter {
-        constructor(length, innerColor, outlineColor) {
+    class Cell {
+        constructor(length = -1, innerColor, outlineColor, x = -1, y = -1) {
             this.size = length,
-                this.innerColor = innerColor,
-                this.outlineColor = outlineColor
+            this.innerColor = innerColor,
+            this.outlineColor = outlineColor
+            this.x = x;
+            this.y = y;
         }
     }
+
+    class CellGridContainer {
+        constructor(gridSize, baseCellParams, canvasCtx, startBorder, endBorder) {
+            this.gridSize = gridSize;
+            this.baseCellParams = baseCellParams;
+            this.canvasCtx = canvasCtx;
+            this.startBorder = startBorder;
+            this.endBorder = endBorder;
+        }
+
+        createGrid() {
+            this.Cells = new Array(this.gridSize);
+            var x, y;
+            for (x = 0; x < this.gridSize; x++) {
+                this.Cells[x] = new Array(this.gridSize);
+                for (y = 0; y < this.gridSize; y++) {
+                    this.Cells[x][y] = new Cell(this.baseCellParams.size, this.baseCellParams.innerColor, this.baseCellParams.outlineColor, this.getCellCoord(x), this.getCellCoord(y));
+                    this.drawFullCell(this.Cells[x][y]);
+                }
+            }
+        }
+
+        getCellCoord(cellNumber) {
+            return this.startBorder + (cellNumber * this.baseCellParams.size);
+        }
+
+        drawFullCell(cell) {
+            DrawFillRenctangle(cell.x, cell.y, cell.size, cell.innerColor);
+            DrawOutlineRectangle(cell.x, cell.y, cell.size, cell.outlineColor);
+        }
+    }
+    //---------------------------------
+    //---------Entry point-------------
+    //---------------------------------
 
     var Canvas = document.getElementById("Canvas");
     var CanvasContext = Canvas.getContext("2d");
@@ -16,20 +52,28 @@
     var TLborder;
     var BRborder;
     var margin;
-    var baseCell = new CellParameter(-1, "red", "green");
-
+    var baseCell = new Cell(undefined, "red", "green");
     var cellCount = 18;
     var relMarginSize = 0.1;
 
-    //Initialization of page:
+    var CellsContainer;
     onResize();
+
     //-----------------------
 
     function onResize() {
+        console.log(">>Resizing")
         ClearCanvas();
         ResizeCanvas();
         DrawCanvas();
-        DrawGrid();
+        //DrawGrid();
+        setCells();
+    }
+
+    function setCells() {
+        CellsContainer = new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder);
+        //CellsContainer.drawGrid();
+        CellsContainer.createGrid();
     }
 
     function ResizeCanvas() {
