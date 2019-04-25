@@ -1,5 +1,24 @@
 ﻿(function () {
-    //DATA STRUCTURES
+    //ENUMERATORS:
+    
+    var MoveDirection = Object.freeze({
+        "None": 0,
+        "Up": 1,
+        "Right": 2,
+        "Down": 3,
+        "Left": 4
+    });
+
+
+    class Coordinate {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+
+    //DATA STRUCTURES:
 class CustomLinkedListNode {
     constructor(element) {
         this.element = element;
@@ -14,6 +33,10 @@ class CustomLinkedList {
         this.head = null;
         this.tail = null;
         
+    }
+
+    getFirst() {
+        return this.head.element;
     }
 
     addFirst(element) {
@@ -81,31 +104,115 @@ class CustomLinkedList {
             this.endBorder = endBorder;
         }
 
-        createGrid() {
+        createGrid(draw = true) {
             this.Cells = new Array(this.gridSize);
             var x, y;
             for (x = 0; x < this.gridSize; x++) {
                 this.Cells[x] = new Array(this.gridSize);
                 for (y = 0; y < this.gridSize; y++) {
-                    this.Cells[x][y] = new Cell(this.baseCellParams.size, this.baseCellParams.innerColor, this.baseCellParams.outlineColor, this.getCellCoord(x), this.getCellCoord(y));
-                    this.drawFullCell(this.Cells[x][y]);
+                    this.Cells[x][y] = new Cell(this.baseCellParams.size, this.baseCellParams.innerColor, this.baseCellParams.outlineColor, x, y);
+                    if (draw === true) {
+                        this.drawCustomCell(this.Cells[x][y]);
+                    }
                 }
             }
+        }
+
+        drawGrid() {
+            var x, y;
+            for (x = 0; x < this.gridSize; x++) {
+                for (y = 0; y < this.gridSize; y++) {
+                    this.drawCustomCell(this.Cells[x][y]);
+                }
+            }
+        }
+
+        initializeSnake(snakeBody, color) {
+            //iterate through snakeBody
+        }
+
+        updateSnake( snakeColor, head, tail = null) {
+            this.drawCell(this.getCellCoord(head.x), this.getCellCoord(head.y), snakeColor);
+            if (tail !== null) {
+                this.drawCell(tail.x, tail.y, this.baseCellParams.innerColor);
+            }
+        }
+        
+        drawCell(x, y, fillColor) {
+            var coordx = getCellCoord(x);
+            var coordy = getCellCoord(y);
+            DrawFillRenctangle(coordx, coordy, this.baseCellParams.size, fillColor);
+            DrawOutlineRectangle(coordx, coordy, this.baseCellParams.size, this.baseCellParams.outlineColor);
+        }
+
+        drawBaseCell(x,y) {
+            var coordx = getCellCoord(x);
+            var coordy = getCellCoord(y);
+            DrawFillRenctangle(coordx, coordy, this.baseCellParams.size, this.baseCellParams.innerColor);
+            DrawOutlineRectangle(coordx, coordy, this.baseCellParams.size, this.baseCellParams.outlineColor);
+        }
+
+        drawCustomCell(cell) {
+            var xCoord = this.getCellCoord(cell.x);
+            var yCoord = this.getCellCoord(cell.y);
+            DrawFillRenctangle(xCoord, yCoord, cell.size, cell.innerColor);
+            DrawOutlineRectangle(xCoord, yCoord, cell.size, cell.outlineColor);
         }
 
         getCellCoord(cellNumber) {
             return this.startBorder + (cellNumber * this.baseCellParams.size);
         }
-
-        drawFullCell(cell) {
-            DrawFillRenctangle(cell.x, cell.y, cell.size, cell.innerColor);
-            DrawOutlineRectangle(cell.x, cell.y, cell.size, cell.outlineColor);
-        }
     }
 
     class Snake {
         constructor(name, color) {
-            var x = new Array
+            this.body = new CustomLinkedList();
+            this.color = color;
+        }
+
+        setStartPoint(x, y) {
+            this.currDirection = MoveDirection.Down;
+            body.addFirst(new Cell(base.size, this.color, baseCell.outlineColor,x,y));
+        }
+
+
+        //direction- enum objekto reiksme
+        update(direction, isFood) {
+            var currentHead = this.body.getFirst();
+            var newHead;
+
+            switch (direction) {
+                case MoveDirection.Up:
+                    newHead = currentHead.y - 1;
+                    break;
+                case MoveDirection.Right:
+                    newHead = currentHead.x + 1;
+                    this.y += 1;
+                    break;
+                case MoveDirection.Down:
+                    newHead = currentHead.y + 1;
+                    this.x -= 1;
+                    break;
+                case MoveDirection.Left:
+                    newHead = currentHead.x - 1;
+                    break;
+                case MoveDirection.None:
+                    return;
+                default:
+                    console.error("Unexpected direction value!", direction);
+                    return;
+                }
+
+            body.addFirst(newHead);
+            //
+            // container -> drawCell(newHead.x, newHead.y, this.color);
+            if (isFood === true) {
+
+            } else {
+                var tail = body.deleteLast();
+                //
+                // container -> drawBaseCell(tail.x,tail.y);
+            }
         }
     }
 
@@ -123,15 +230,16 @@ class CustomLinkedList {
     var BRborder;
     var margin;
     var baseCell = new Cell(undefined, "red", "green");
-    var cellCount = 18;
+    var cellCount = 10;
     var relMarginSize = 0.1;
-
     var CellsContainer;
+    var snake = new Snake("Donatas", "blue");
+    snake.setStartPoint(2, 2);
+
+
     onResize();
 
-    var linkedList = new CustomLinkedList();
     //-----------------------
-
     function onResize() {
         console.log(">>Resizing")
         ClearCanvas();
@@ -141,10 +249,14 @@ class CustomLinkedList {
         setCells();
     }
 
+    function onSnakeMovement() {
+
+    }
+
     function setCells() {
         CellsContainer = new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder);
-        //CellsContainer.drawGrid();
-        CellsContainer.createGrid();
+        CellsContainer.createGrid(false);
+        CellsContainer.drawGrid();
     }
 
     function ResizeCanvas() {
@@ -161,7 +273,7 @@ class CustomLinkedList {
     function SetCanvasVariables(canvasLength) {
         Canvas.width = canvasLength;
         Canvas.height = canvasLength;
-        console.log("canvas params: ", Canvas.width, Canvas.height);
+        console.log("Canvas length: ", canvasLength);
         setOtherCanvasVariables(canvasLength);
     }
 
@@ -170,8 +282,9 @@ class CustomLinkedList {
     */
     function getCanvasLength(currentLength) {
         var arenaLength = currentLength * (1-(relMarginSize));
-        cellSize = arenaLength / cellCount;
-        return (Math.floor(cellSize) * cellCount) / (1 - (relMarginSize))
+        var cellSize = arenaLength / cellCount;
+        baseCell.size = cellSize;
+        return (Math.floor(cellSize) * cellCount) / (1 - (relMarginSize));
     }
     
     function ClearCanvas() {
@@ -180,7 +293,6 @@ class CustomLinkedList {
 
     function setOtherCanvasVariables(canvasLength) {
         length = canvasLength;
-        console.log("Length:", length);
 
         margin = length * 0.1;
 
@@ -188,7 +300,7 @@ class CustomLinkedList {
         BRborder = length - (TLborder * 2);
         console.log("Real arena length:", BRborder-TLborder);
 
-        baseCell.size = length * 0.05;
+        //baseCell.size = length * 0.05;
         console.log("Cell Length: ", baseCell.size);
     }
 
