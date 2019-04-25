@@ -16,22 +16,23 @@ namespace SnakeMultiplayer.Services
             this.y = y;
         }
 
-        public void Update(CoordDirection direction)
+        public void Update(MoveDirection direction)
         {
             switch (direction)
             {
-                case CoordDirection.Up:
+                case MoveDirection.Up:
+                    this.y -= 1;
+                    break;
+                case MoveDirection.Right:
                     this.x += 1;
                     break;
-                case CoordDirection.Right:
+                case MoveDirection.Down:
                     this.y += 1;
                     break;
-                case CoordDirection.Down:
+                case MoveDirection.Left:
                     this.x -= 1;
                     break;
-                case CoordDirection.Left:
-
-                case CoordDirection.None:
+                case MoveDirection.None:
                 default:
                     throw new ArgumentException($"Argument value of enum CoordDirection expected, but {direction} found");
             }
@@ -47,7 +48,7 @@ namespace SnakeMultiplayer.Services
         }
     }
     
-    public enum CoordDirection
+    public enum MoveDirection
     {
         None = 0,
         Up = 1,

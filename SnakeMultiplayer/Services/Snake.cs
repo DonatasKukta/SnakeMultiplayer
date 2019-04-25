@@ -18,7 +18,7 @@ namespace SnakeMultiplayer.Services
             this.body = new LinkedList<Coordinate>();
             body.AddFirst(initialPosition);
         }
-        public void Move(CoordDirection direction, bool isFood)
+        public void Move(MoveDirection direction, bool isFood)
         {
             var newPosition = body.First.Value;
             newPosition.Update(direction);
