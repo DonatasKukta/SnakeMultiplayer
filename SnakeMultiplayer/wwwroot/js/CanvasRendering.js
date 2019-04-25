@@ -172,7 +172,7 @@ class CustomLinkedList {
 
         setStartPoint(x, y) {
             this.currDirection = MoveDirection.Down;
-            body.addFirst(new Cell(base.size, this.color, baseCell.outlineColor,x,y));
+            this.body.addFirst(new Cell(baseCell.size, this.color, baseCell.outlineColor,x,y));
         }
 
 
@@ -245,7 +245,6 @@ class CustomLinkedList {
         ClearCanvas();
         ResizeCanvas();
         DrawCanvas();
-        //DrawGrid();
         setCells();
     }
 
