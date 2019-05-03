@@ -32,7 +32,6 @@ class CustomLinkedList {
         this.count = 0;
         this.head = null;
         this.tail = null;
-        
     }
 
     getFirst() {
@@ -76,6 +75,19 @@ class CustomLinkedList {
         }
     }
 
+    getArray() {
+
+        var array = [];
+        var currNode = this.head;
+
+        while (currNode !== null) {
+
+            array.push(currNode.element);
+            currNode = currNode.next;
+        }
+        return array;
+    }
+
     print() {
         console.log("LinkedList elements:");
         var node = this.head;
@@ -92,6 +104,27 @@ class CustomLinkedList {
             this.outlineColor = outlineColor
             this.x = x;
             this.y = y;
+        }
+        update(direction) {
+            switch (direction) {
+                case MoveDirection.Up:
+                    this.y -= 1;
+                    break;
+                case MoveDirection.Right:
+                    this.x += 1;
+                    break;
+                case MoveDirection.Down:
+                    this.y += 1;
+                    break;
+                case MoveDirection.Left:
+                    this.x -= 1;
+                    break;
+                case MoveDirection.None:
+                    break;
+                default:
+                    console.error("Unexpected direction value!", direction);
+                    return;
+            }
         }
     }
 
@@ -129,25 +162,29 @@ class CustomLinkedList {
 
         initializeSnake(snakeBody, color) {
             //iterate through snakeBody
+            var i;
+            for (i = 0; i < snakeBody.length; i++) {
+                this.updateSnake(color, snakeBody[i]);
+            }
         }
 
         updateSnake( snakeColor, head, tail = null) {
-            this.drawCell(this.getCellCoord(head.x), this.getCellCoord(head.y), snakeColor);
+            this.drawCell(head.x, head.y, snakeColor);
             if (tail !== null) {
                 this.drawCell(tail.x, tail.y, this.baseCellParams.innerColor);
             }
         }
         
         drawCell(x, y, fillColor) {
-            var coordx = getCellCoord(x);
-            var coordy = getCellCoord(y);
+            var coordx = this.getCellCoord(x);
+            var coordy = this.getCellCoord(y);
             DrawFillRenctangle(coordx, coordy, this.baseCellParams.size, fillColor);
             DrawOutlineRectangle(coordx, coordy, this.baseCellParams.size, this.baseCellParams.outlineColor);
         }
 
         drawBaseCell(x,y) {
-            var coordx = getCellCoord(x);
-            var coordy = getCellCoord(y);
+            var coordx = this.getCellCoord(x);
+            var coordy = this.getCellCoord(y);
             DrawFillRenctangle(coordx, coordy, this.baseCellParams.size, this.baseCellParams.innerColor);
             DrawOutlineRectangle(coordx, coordy, this.baseCellParams.size, this.baseCellParams.outlineColor);
         }
@@ -175,48 +212,75 @@ class CustomLinkedList {
             this.body.addFirst(new Cell(baseCell.size, this.color, baseCell.outlineColor,x,y));
         }
 
-
-        //direction- enum objekto reiksme
+        // Always returns added head coordinates AND deleted tail coordinates.
         update(direction, isFood) {
-            var currentHead = this.body.getFirst();
-            var newHead;
+            var newHead = this.body.getFirst();
+            newHead.update(direction);
 
-            switch (direction) {
-                case MoveDirection.Up:
-                    newHead = currentHead.y - 1;
-                    break;
-                case MoveDirection.Right:
-                    newHead = currentHead.x + 1;
-                    this.y += 1;
-                    break;
-                case MoveDirection.Down:
-                    newHead = currentHead.y + 1;
-                    this.x -= 1;
-                    break;
-                case MoveDirection.Left:
-                    newHead = currentHead.x - 1;
-                    break;
-                case MoveDirection.None:
-                    return;
-                default:
-                    console.error("Unexpected direction value!", direction);
-                    return;
-                }
+            this.body.addFirst(newHead);
 
-            body.addFirst(newHead);
-            //
-            // container -> drawCell(newHead.x, newHead.y, this.color);
             if (isFood === true) {
-
+                return { head: newHead, tail : null };
             } else {
-                var tail = body.deleteLast();
-                //
-                // container -> drawBaseCell(tail.x,tail.y);
+                return { head: newHead, tail:  this.body.deleteLast()};
             }
+        }
+
+        getBodyArray() {
+            return this.body.getArray();
         }
     }
 
+    class GameController {
+        constructor() {
+            this.snakes = new Array();
+            this.snakeCount = 0;
+        }
 
+        setEnvironment() {
+            onResize();
+        }
+
+        setCellContainer(container) {
+            this.cellContainer = container;
+            this.cellContainer.createGrid(false);
+            this.cellContainer.drawGrid();
+        }
+
+        createSnake() {
+
+        }
+        
+        moveSnake(direction) {
+            
+        }
+
+        sendUpdate(direction) {
+            
+        }
+
+        receiveUpdate() {
+            // According to received information from web socket, update snakes and cell container.
+            /*
+             * for each snake moves nake
+             * */
+        }
+
+        doStubActions() {
+        var snake = new Snake("Donatas", "blue");
+        snake.setStartPoint(2, 2);
+        this.cellContainer.initializeSnake(snake.getBodyArray(), snake.color);
+
+            var newCoords = snake.update(MoveDirection.Right, true);
+            this.cellContainer.updateSnake(snake.innerColor, newCoords.head, newCoords.tail);
+            newCoords = snake.update(MoveDirection.Right, true);
+            this.cellContainer.updateSnake(snake.innerColor, newCoords.head, newCoords.tail);
+            newCoords = snake.update(MoveDirection.Right, true);
+            this.cellContainer.updateSnake(snake.innerColor, newCoords.head, newCoords.tail);
+            
+       }
+
+    }
     //---------------------------------
     //---------Entry point-------------
     //---------------------------------
@@ -232,13 +296,30 @@ class CustomLinkedList {
     var baseCell = new Cell(undefined, "red", "green");
     var cellCount = 10;
     var relMarginSize = 0.1;
-    var CellsContainer;
-    var snake = new Snake("Donatas", "blue");
-    snake.setStartPoint(2, 2);
+    
+    var gameController = new GameController();
+    gameController.setEnvironment();
+    gameController.doStubActions();
 
+    document.onkeydown = function (e) {
+        switch (e.key) {
+            case 'ArrowUp':
+                gameController.sendUpdate(MoveDirection.Up);
+                break;
+            case 'ArrowDown':
+                gameController.sendUpdate(MoveDirection.Down);
+                break;
+            case 'ArrowLeft':
+                gameController.sendUpdate(MoveDirection.Left);
+                break;
+            case 'ArrowRight':
+                gameController.sendUpdate(MoveDirection.Right);
+                break;
+        }
+    };
 
-    onResize();
-
+    //-----------------------
+    // Public methods:
     //-----------------------
     function onResize() {
         console.log(">>Resizing")
@@ -253,9 +334,10 @@ class CustomLinkedList {
     }
 
     function setCells() {
-        CellsContainer = new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder);
-        CellsContainer.createGrid(false);
-        CellsContainer.drawGrid();
+        //CellsContainer = new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder);
+        //CellsContainer.createGrid(false);
+        //CellsContainer.drawGrid();
+        gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder));
     }
 
     function ResizeCanvas() {
