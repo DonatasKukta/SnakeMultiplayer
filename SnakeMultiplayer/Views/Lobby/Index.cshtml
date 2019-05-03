@@ -1,0 +1,15 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "message";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-center">
+    <form asp-controller="Lobby" asp-action="GameArena" method="get">
+        <label> Name:</label>
+        <input type="text" class="form-control" name="Name" value="Donatas">
+        <button type="submit" class="btn btn-primary">Enter game</button>
+    </form>
+</div>
