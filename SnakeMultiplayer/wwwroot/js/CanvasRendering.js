@@ -1,6 +1,4 @@
 ﻿(function () {
-    //ENUMERATORS:
-    
     var MoveDirection = Object.freeze({
         "None": 0,
         "Up": 1,
@@ -221,6 +219,20 @@
     var gameController = new GameController();
     gameController.setEnvironment();
     gameController.doStubActions();
+
+    var socketController = new WebSocketController();
+    socketController.connect();
+
+    const sleep = (milliseconds) => {
+        return new Promise(resolve => setTimeout(resolve, milliseconds))
+    }
+
+    sleep(500).then(() => {
+        socketController.send("nusiusta zinute");
+        socketController.send("kita zinute");
+    });
+
+
 
     document.onkeydown = function (e) {
         switch (e.key) {
