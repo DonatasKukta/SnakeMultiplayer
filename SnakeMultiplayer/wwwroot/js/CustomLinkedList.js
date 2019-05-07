@@ -60,8 +60,8 @@ class CustomLinkedList {
         var currNode = this.head;
 
         while (currNode !== null) {
-
-            array.push(currNode.element);
+            //Must push only copies of element!
+            array.push(currNode.element.getCopy());
             currNode = currNode.next;
         }
         return array;
