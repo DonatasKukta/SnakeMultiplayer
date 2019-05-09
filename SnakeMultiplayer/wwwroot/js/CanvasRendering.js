@@ -6,7 +6,7 @@ var TLborder;
 var BRborder;
 var margin;
 var baseCell = new Cell(undefined, "red", "green");
-var cellCount = 10;
+var cellCount = 20;
 var relMarginSize = 0.1;
 
 function onResize() {
