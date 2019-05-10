@@ -33,6 +33,29 @@ class GameController {
     constructor() {
         this.snakes = new Array();
         this.snakeCount = 0;
+        //this.socket;
+        this.socketDispatcher = new Dispatcher();
+        //this.socketDispatcher.on("onSocketOpen", this.onOpenedSocket.call(this, event));
+        this.socketDispatcher.on("onSocketOpen", this.onOpenedSocket.bind(this));
+        this.socketDispatcher.on("onSocketMessage", this.onMessageReceived.bind(this));
+        this.socketController = new WebSocketController(this.socketDispatcher);
+        this.socketController.connect();
+        //this.connect();
+    }
+
+    onOpenedSocket(e) {
+        console.log(this);
+        this.socketController.send("siunciam 123");
+        this.socketController.send("siunciam 431");
+    }
+
+    onMessageReceived(e) {
+        console.log("GameController received message:", e, this);
+    }
+
+    beginStub() {
+        this.webSocketController.send("nusiusta zinute");
+        this.webSocketController.send("kita zinute");
     }
 
     setEnvironment() {
@@ -49,6 +72,10 @@ class GameController {
         this.cellContainer.createGrid(false);
         this.cellContainer.drawGrid();
         this.drawSnakes();
+    }
+
+    raiseOnOpen() {
+
     }
 
     createSnake() {
@@ -69,13 +96,6 @@ class GameController {
         }
     }
 
-    receiveUpdate() {
-        // According to received information from web socket, update snakes and cell container.
-        /*
-         * for each snake moves nake
-         * */
-    }
-
     doStubActions() {
         var snake = new Snake("Donatas", "blue");
         snake.setStartPoint(2, 2);
@@ -89,4 +109,14 @@ class GameController {
         this.cellContainer.updateSnake(snake.innerColor, newCoords.head, newCoords.tail);
         this.snakes.push(snake);
     }
+}
+
+
+function htmlEscape(str) {
+    return str.toString()
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }

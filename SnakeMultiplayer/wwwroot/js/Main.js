@@ -1,20 +1,17 @@
 ﻿(function () {
     window.addEventListener('resize', reSet, false);
     var gameController = new GameController();
+    
     gameController.setEnvironment();
-    gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder));    gameController.doStubActions();
-
-    var socketController = new WebSocketController();
-    socketController.connect();
-
-    const sleep = (milliseconds) => {
-        return new Promise(resolve => setTimeout(resolve, milliseconds))
-    }
-
-    sleep(500).then(() => {
-        socketController.send("nusiusta zinute");
-        socketController.send("kita zinute");
-    });
+    gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder)); gameController.doStubActions();
+    
+    //Absurdsss
+    /*
+    gameController.socket.onopen = function (e) {
+        gameController.send("inicijuota...");
+        gameController.send("inicijuota23..");
+    }*/
+    
 
     document.onkeydown = function (e) {
         switch (e.key) {
@@ -33,9 +30,9 @@
         }
     };
 
-    //-----------------------
-    // Public methods:
-    //-----------------------
+    function metodasKazkoks() {
+        console.log("iskviestas metodas");
+    }
 
     function reSet() {
         onResize();
@@ -43,23 +40,7 @@
         gameController.drawSnakes();       
     }
 
-    /*
-    function onResize() {
-        console.log(">>Resizing")
-        ClearCanvas();
-        ResizeCanvas();
-        DrawBaseCanvas();
-
-    } */
-
     function onSnakeMovement() {
 
-    }
-
-    function setCells() {
-        //CellsContainer = new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder);
-        //CellsContainer.createGrid(false);
-        //CellsContainer.drawGrid();
-        //gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder));
     }
 })();

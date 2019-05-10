@@ -1,33 +1,42 @@
 ﻿class WebSocketController {
-    constructor() {
+    constructor(dispatcher) {
+        this.dispatcher = dispatcher;
         var scheme = document.location.protocol === "https:" ? "wss" : "ws";
         var port = document.location.port ? (":" + document.location.port) : "";
         this.connectionUrl = scheme + "://" + document.location.hostname + port + "/ws";
         this.socket;
-        this.state = "initialized";
         console.log("Connection URL: " + this.connectionUrl);
-        //this.messageReceivedEvent = new CustomEvent();
-    }
+        //this.socketMessageEvent = new Event('onSocketReceivedMessage');
+        //this.socketCloseEvent   = new Event('onSocketClosed');
+        //this.socketErrorEvent   = new Event('onSocketError');
 
+    }
     connect() {
         this.socket = new WebSocket(this.connectionUrl);
-        this.state = WebSocket.CONNECTING;
-        this.socket.onopen = function (event) {
-            this.state = "Open";
-            console.log("Socket opened");
-        };
-        this.socket.onclose = function (event) {
-            this.state = "Closed";
-            console.log("Connection closed. Code:" + htmlEscape(event.code) + ".Reason: " + htmlEscape(event.reason));
-        };
-        this.socket.onerror = function () {
-            this.state = "Error";
-            console.warn("Error occured! ");
-        }
+        this.socket.addEventListener("open", this.onOpen.bind(this));
+        this.socket.addEventListener("close", this.onClose.bind(this));
+        this.socket.addEventListener("error", this.onError.bind(this));
+        this.socket.addEventListener("message", this.onMessage.bind(this));
+    }
 
-        this.socket.onmessage = function (event) {
-            console.warn("Received message: " + htmlEscape(event.data));
-        };
+    onOpen(event) {
+        console.log("Socket opened", this);
+        this.dispatcher.dispatch("onSocketOpen", event);
+    }
+
+    onClose(event) {
+        console.log("Connection closed. Code:" + htmlEscape(event.code) + ".Reason: " + htmlEscape(event.reason));
+        this.dispatcher.dispatch("onSocketClose", event);
+    }
+
+    onError(event) {
+        console.warn("Error occured! ");
+        this.dispatcher.dispatch("onSocketError", event);
+    }
+
+    onMessage(event) {
+        console.warn("Received message: " + htmlEscape(event.data));
+        this.dispatcher.dispatch("onSocketMessage", htmlEscape(event.data));
     }
 
     send(message) {
@@ -46,7 +55,11 @@
         }
         this.socket.close(1000, "Closing from client");
     }
-}    
+
+    getSocketState() {
+        return this.socket.readyState;
+    }
+}
 
 function htmlEscape(str) {
     return str.toString()

@@ -14,7 +14,7 @@ class CustomLinkedList {
     }
 
     getFirst() {
-        return this.head.element;
+        return this.head.element.getCopy();
     }
 
     addFirst(element) {
@@ -60,7 +60,6 @@ class CustomLinkedList {
         var currNode = this.head;
 
         while (currNode !== null) {
-            //Must push only copies of element!
             array.push(currNode.element.getCopy());
             currNode = currNode.next;
         }
