@@ -5,42 +5,54 @@ using System.Threading.Tasks;
 
 namespace SnakeMultiplayer.Services
 {
-    public class Lobby
+    /// <summary>
+    /// Lobby object represents an environment of a single game instance
+    /// </summary>
+    public class Arena
     {
         protected Cells[,] board;
         protected Dictionary<string, Snake> snakes;
-        protected Dictionary<string, Cells> nextMoves;
+        protected Dictionary<string, MoveDirection> pendingActions;
         protected int width;
         protected int height;
-
+        protected bool isWall;
         
-
-        public Lobby(int width, int height, bool isWall)
+        public Arena(int width, int height, bool isWall)
         {
             board = new Cells[width, height];
             this.height = height;
             this.width = width;
 
-            nextMoves = new Dictionary<string, Cells>();
-            if (isWall)
-                setWall();
+            pendingActions = new Dictionary<string, MoveDirection>();
+            this.isWall = isWall;
         }
 
-        public void setWall()
+        /// <summary>
+        /// Sets current pending actions to snakes
+        /// </summary>
+        private void setPendingActions()
         {
-            int i;
-            int edgeIndex = width - 1;
-            for (i = 0; i<width; i++)
-            {
-                board[0, i] = Cells.wall;
-                board[edgeIndex, i] = Cells.wall;
-            }
 
-            edgeIndex = height - 1;
-            for (i = 0; i < height; i++)
+        }
+
+        /// <summary>
+        /// Updates pending direction
+        /// </summary>
+        /// <param name="playerName"></param>
+        /// <param name="direction"></param>
+        public void updatePendingAction(string playerName, MoveDirection direction)
+        {
+            pendingActions[playerName] = direction;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void resetPendingActions()
+        {
+            foreach(var action in pendingActions)
             {
-                board[i,0] = Cells.wall;
-                board[i, edgeIndex] = Cells.wall;
+                pendingActions[action.Key] = MoveDirection.None;
             }
         }
 
@@ -58,8 +70,7 @@ namespace SnakeMultiplayer.Services
 
             return true;
         }
-
-
+        
         public void OnSnakeMovemenent(Coordinate head ,Coordinate tail, bool isFood)
         {
            // Snake snake = (Snake)source;
@@ -71,7 +82,6 @@ namespace SnakeMultiplayer.Services
     {
         empty = 0,
         food = 1,
-        snake = 2,
-        wall = 3
+        snake = 2
     }
 }
