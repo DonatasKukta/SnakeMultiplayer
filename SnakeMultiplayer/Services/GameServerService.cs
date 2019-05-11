@@ -4,13 +4,15 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 
 namespace SnakeMultiplayer.Services
 {
     public class GameServerService : IHostedService
     {
         LinkedList<Message> sharedResource = new LinkedList<Message>();
-        
+        Dictionary<string, LobbyService> lobbies = new Dictionary<string, LobbyService>();
+
         public Task StartAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
@@ -18,6 +20,18 @@ namespace SnakeMultiplayer.Services
         public Task StopAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
+        }
+
+        public bool createLobby()
+        {
+            return false; // LobbyService lobby = new LobbyService(nameof, hostName)
+        }
+        public async void forward(string webScoketRequest)
+        {
+            RequestBody obj = JsonConvert.DeserializeObject<RequestBody>(webScoketRequest);
+            string lobby = obj.lobbyName;
+            string message = obj.body;
+            //...
         }
         
         public Task AddMessage(string user, string message)
@@ -45,6 +59,11 @@ namespace SnakeMultiplayer.Services
             return result;
         }
 
+        class RequestBody
+        {
+            public string lobbyName;
+            public string body;
+        }
     }
 
     class Message
