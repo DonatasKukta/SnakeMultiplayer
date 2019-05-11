@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -47,16 +48,32 @@ namespace SnakeMultiplayer
 
         private async Task Echo(HttpContext context, WebSocket webSocket, [FromServices]GameServerService service)
         {
-            var buffer = new byte[1024 * 4];
+            byte[] buffer = new byte[1024 * 4];
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            while (!result.CloseStatus.HasValue)
+            while (!result.CloseStatus.HasValue && result.MessageType == WebSocketMessageType.Text)
             {
-                await service.AddMessage("x", "Prideta");
-                await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
+                //string converted = System.Text.Encoding.UTF8.GetString(buffer, 0, buffer.Length);
+                // Console.WriteLine(converted);
+                string converted = getString(buffer);
 
+                buffer = getBytes(converted, buffer.Length);
+                await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
                 result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+        }
+
+        static string getString(byte[] array)
+        {
+            return Encoding.UTF8.GetString(array, 0, array.Length).Replace("\0", string.Empty);
+        }
+
+        static byte[] getBytes(string text, int bufferLength)
+        {
+            byte[] newBuffer = new byte[bufferLength];
+            byte[] charsBuffer = Encoding.UTF8.GetBytes(text.ToCharArray());
+            Buffer.BlockCopy(charsBuffer, 0, newBuffer, 0, text.Length);
+            return newBuffer;
         }
     }
 
