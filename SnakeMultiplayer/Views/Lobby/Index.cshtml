@@ -4,12 +4,27 @@
 @{
     ViewData["Title"] = "message";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    string playerName = ViewData["playerName"] == null ? "" : (string)ViewData["playerName"];
+    string lobbyName = ViewData["lobbyId"] == null ? "" : (string)ViewData["lobbyId"];
 }
 
 <div class="d-flex justify-content-center">
-    <form asp-controller="Lobby" asp-action="GameArena" method="get">
-        <label> Name:</label>
-        <input type="text" class="form-control" name="Name" value="Donatas">
-        <button type="submit" class="btn btn-primary">Enter game</button>
-    </form>
+    <div class="d-flex justify-content-center">
+        <h1> @ViewData["lobbyId"]</h1>
+    </div>
 </div>
+
+<div id="CanvasDiv" align="center">
+    <canvas id="Canvas">  </canvas>
+</div>
+
+
+<script src="~/js/CustomLinkedList.js"></script>
+<script src="~/js/WebSocketController.js"></script>
+
+<script src="~/js/Cell.js"></script>
+<script src="~/js/CanvasRendering.js"></script>
+<script src="~/js/CellContainer.js"></script>
+<script src="~/js/GameController.js"></script>
+<script src="~/js/Dispatcher.js"></script>
+<script src="~/js/Main.js"></script>

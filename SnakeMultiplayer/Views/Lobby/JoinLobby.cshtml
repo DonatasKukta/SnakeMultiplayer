@@ -1,0 +1,16 @@
+﻿
+@{
+    ViewData["Title"] = "JoinLobby";
+}
+
+<h2>JoinLobby</h2>
+
+<div class="d-flex justify-content-center">
+    <form asp-controller="Lobby" asp-action="JoinLobby" method="post">
+        <label> Your nickname:</label>
+        <input type="text" class="form-control" name="playerName">
+        <label> Lobby name:</label>
+        <input type="text" class="form-control" name="id" value="@ViewData["lobbyId"]">
+        <button type="submit" class="btn btn-primary">Join</button>
+    </form>
+</div>
