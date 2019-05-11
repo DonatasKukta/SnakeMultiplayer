@@ -2,10 +2,16 @@
     ViewData["Title"] = "Home Page";
 }
 <div class="d-flex justify-content-center">
-    <form asp-controller="Lobby" asp-action="Index" method="get">
-        <button type="submit" class="btn btn-primary">Enter lobby</button>
+    <form asp-controller="Lobby" asp-action="JoinLobby" method="get">
+        <button type="submit" class="btn btn-primary">Join lobby</button>
     </form>
 </div>
+<div class="d-flex justify-content-center">
+    <form asp-controller="Lobby" asp-action="CreateLobby" method="get">
+        <button type="submit" class="btn btn-primary">Create lobby</button>
+    </form>
+</div>
+
     <!--
     <div class="row">
         <div class="col-md-3">
