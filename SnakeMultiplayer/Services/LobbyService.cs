@@ -9,7 +9,7 @@ namespace SnakeMultiplayer.Services
     public class LobbyService
     {
         public string ID {  get; private set; }
-        private LobbyStates state;
+        private LobbyState state;
         Dictionary<string, WebSocket> players = new Dictionary<string, WebSocket>();
         private string HostPlayer;
         public LobbyService(string id, string host, WebSocket socket)
@@ -18,9 +18,19 @@ namespace SnakeMultiplayer.Services
             this.HostPlayer = host;
             players.Add(host, socket);
         }
+
+        public void receiveSocketMessage(string player ,string message)
+        {
+
+        }
+
+        public void sendSocketMessage(string player, string message)
+        {
+            
+        }
     }
 
-    enum LobbyStates
+    enum LobbyState
     {
         Idle,
         inGame,

@@ -13,7 +13,8 @@ namespace SnakeMultiplayer.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            return View("Views/Lobby/CreateLobby.cshtml");
+            //return View("Views/Lobby/CreateLobby.cshtml");
+            return View("Views/Home/Index.cshtml");
         }
         [HttpGet]
         public IActionResult CreateLobby()
@@ -22,9 +23,12 @@ namespace SnakeMultiplayer.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateLobby(string id, string playerName)
+        public IActionResult CreateLobby(string id, string playerName, [FromServices]GameServerService service)
         {
-            return View();
+            ViewData["playerName"] = playerName;
+            ViewData["lobbyId"] = id;
+            // create new lobby in service
+            return View("Views/Lobby/Index.cshtml");
         }
 
         [HttpGet]
