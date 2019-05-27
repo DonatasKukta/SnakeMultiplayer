@@ -24,19 +24,16 @@ namespace SnakeMultiplayer.Controllers
         [HttpPost]
         public IActionResult CreateLobby(string id, string playerName)
         {
-            return View();
+            ViewData["playerName"] = playerName;
+            ViewData["lobbyId"] = id;
+            return View("Views/Lobby/Index.cshtml");
         }
 
         [HttpGet]
-        public IActionResult JoinLobby()
+        public IActionResult JoinLobby(string id = "")
         {
-            return View();
-        }
+            ViewData["lobbyId"] = id;
 
-        [HttpGet("{id}")]
-        public IActionResult JoinLobby(string id)
-        {
-            @ViewData["lobbyId"] = id;
             return View();
         }
 
@@ -44,7 +41,9 @@ namespace SnakeMultiplayer.Controllers
         [HttpPost]
         public IActionResult JoinLobby(string id, string playerName)
         {
-            return View();
+            ViewData["playerName"] = playerName;
+            ViewData["lobbyId"] = id;
+            return View("Views/Lobby/Index.cshtml");
         }
 
     }
