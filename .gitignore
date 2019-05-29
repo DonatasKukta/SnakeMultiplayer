@@ -1,6 +1,7 @@
 
 bin/
 obj/
+UML/
 .vs/
 appsettings.json
 *.csproj.user
