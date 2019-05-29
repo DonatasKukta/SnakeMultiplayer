@@ -43,9 +43,9 @@ namespace SnakeMultiplayer.Controllers
         public IActionResult Messages(string Message, [FromServices]GameServerService service)
         {
             //await service.AddMessage(Message);
-            service.AddMessage("userxd",Message);
+            //service.AddMessage("userxd",Message);
 
-            ViewData["Messages"] = service.getAllMessages();
+            //ViewData["Messages"] = service.getAllMessages();
 
             return View();
         }

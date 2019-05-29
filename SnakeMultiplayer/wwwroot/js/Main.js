@@ -20,6 +20,7 @@
                 break;
             case 'ArrowDown':
                 gameController.sendUpdate(MoveDirection.Down);
+                gameController.onOpenedSocket();
                 break;
             case 'ArrowLeft':
                 gameController.sendUpdate(MoveDirection.Left);

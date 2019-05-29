@@ -1,17 +1,18 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
+using JsonLibrary;
+using System.Net.WebSockets;
 
 namespace SnakeMultiplayer.Services
 {
     public class GameServerService : IHostedService
     {
-        LinkedList<Message> sharedResource = new LinkedList<Message>();
-        Dictionary<string, LobbyService> lobbies = new Dictionary<string, LobbyService>();
+        ConcurrentDictionary<string, LobbyService> lobbies = new ConcurrentDictionary<string, LobbyService>();
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -22,60 +23,49 @@ namespace SnakeMultiplayer.Services
             return Task.CompletedTask;
         }
 
-        public bool createLobby()
+        /// <summary>
+        /// Creates new lobby and adds it to current lobby dictionary.
+        /// </summary>
+        /// <param name="lobbyId">Lobby ID</param>
+        /// <param name="playerHost">Host player name</param>
+        /// <returns>Returns false if lobby could not be added to lobby dictionary</returns>
+        public bool createLobby(string lobbyId, string playerHost)
         {
-            return false; // LobbyService lobby = new LobbyService(nameof, hostName)
+            LobbyService newLobby = new LobbyService(lobbyId, playerHost, 4);
+            return lobbies.TryAdd(lobbyId, newLobby);
         }
-        public async void forward(string webScoketRequest)
+
+        /// <summary>
+        /// Checks whether lobby with given id exists.
+        /// </summary>
+        /// <returns>True if lobby exists, otherwise false</returns>
+        private bool lobbyExists(string lobbyId)
         {
-            RequestBody obj = JsonConvert.DeserializeObject<RequestBody>(webScoketRequest);
-            string lobby = obj.lobbyName;
-            string message = obj.body;
-            //...
+            return lobbies.ContainsKey(lobbyId);
+        }
+        /// <summary>
+        /// Forwards web socket request to lobby service
+        /// </summary>
+        /// <param name="webScoketRequest"></param>
+        public async void Forward(WebSocket webSocket, Message message)
+        {
+            if (lobbyExists(message.lobby) && message.type.Equals("join"))
+            {
+                string result = lobbies[message.lobby].AddPlayer(message.sender, webSocket);
+                if (!result.Equals(string.Empty))
+                {
+                    await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, result, CancellationToken.None);
+                }
+            }
+            else if (!message.type.Equals("join"))
+            {
+                await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, "Unexpected message type.", CancellationToken.None);
+            }
+            else
+            {
+                await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, "Unexpected protocol behaviour.", CancellationToken.None);
+            }
         }
         
-        public Task AddMessage(string user, string message)
-        {
-            sharedResource.AddLast(new Message(user, message));
-            return Task.CompletedTask;
-        }
-        public Task AddMessage(string message)
-        {
-            sharedResource.AddLast(new Message(string.Empty, message));
-            return Task.CompletedTask;
-        }
-
-        public string getAllMessages()
-        {
-            return getresourcestring();
-        }
-        private string getresourcestring()
-        {
-            string result = "";
-            for (LinkedListNode<Message> i = sharedResource.First; i != null; i = i.Next)
-            {
-                result += i.Value.message + "\n";
-            }
-            return result;
-        }
-
-        class RequestBody
-        {
-            public string lobbyName;
-            public string body;
-        }
     }
-
-    class Message
-    {
-        public string user { get; set; }
-        public string message { get; set; }
-
-        public Message(string u, string m)
-        {
-            user = u;
-            message = m;
-        }
-    }
-
 }

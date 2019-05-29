@@ -38,6 +38,9 @@ class GameController {
         //this.socketDispatcher.on("onSocketOpen", this.onOpenedSocket.call(this, event));
         this.socketDispatcher.on("onSocketOpen", this.onOpenedSocket.bind(this));
         this.socketDispatcher.on("onSocketMessage", this.onMessageReceived.bind(this));
+        this.socketDispatcher.on("onSocketClose", this.onMessageReceived.bind(this));
+        this.socketDispatcher.on("onSocketError", this.onMessageReceived.bind(this));
+
         this.socketController = new WebSocketController(this.socketDispatcher);
         this.socketController.connect();
         //this.connect();
@@ -45,8 +48,10 @@ class GameController {
 
     onOpenedSocket(e) {
         console.log(this);
-        this.socketController.send("siunciam 123");
-        this.socketController.send("siunciam 431");
+        //this.socketController.send("siunciam 123");
+        //this.socketController.send("siunciam 431");
+        var message = {sender : "Donatas", lobby:"Lobbis", type : "join", body : "dar nera body"};
+        this.socketController.send(JSON.stringify(message));
     }
 
     onMessageReceived(e) {
@@ -87,7 +92,8 @@ class GameController {
     }
 
     sendUpdate(direction) {
-
+       // this.socketController.send({ this.name, direction });
+        //var
     }
 
     drawSnakes() {
