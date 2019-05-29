@@ -18,14 +18,15 @@ namespace SnakeMultiplayer
     public class WebSocketMiddleware
     {
         private readonly RequestDelegate _next;
-        private ConcurrentDictionary<string, List<WebSocket>> lobbies;
+        //private ConcurrentDictionary<string, List<WebSocket>> lobbies;
 
         public WebSocketMiddleware(RequestDelegate next)
         {
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext httpContext, [FromServices]GameServerService service)
+        public async Task InvokeAsync(HttpContext httpContext, [FromServices]GameServerService gameServer, 
+            [FromServices] GameServerService webSocketHandler)
         {
             if (httpContext.Request.Path == "/ws")
             {
@@ -33,8 +34,10 @@ namespace SnakeMultiplayer
                 {
                     WebSocket webSocket = await httpContext.WebSockets.AcceptWebSocketAsync();
                     //WebSocketReceiveResult response = await webSocket.ReceiveAsync();
-                    await forward(webSocket, service);
+                    //await forward(webSocket, gameServer);
                     //await echo(httpContext, webSocket, service);
+
+                    await webSocketHandler.HandleWebSocketAsync(webSocket, gameServer);
                 }
                 else
                 {
@@ -46,6 +49,7 @@ namespace SnakeMultiplayer
                 await _next(httpContext);
             }
         }
+        /*
 
         private async void ReceiveMessage(WebSocket webSocket)
         {
@@ -84,8 +88,9 @@ namespace SnakeMultiplayer
             {
                 string m = Strings.getString(buffer);
                 Message message = Message.Deserialize(m);
-                if(message != null)
-                    service.Forward(webSocket, message);
+                if (message != null)
+                    return;
+                //service.Forward(webSocket, message);
                 else
                     await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, "Unexpected message error.", CancellationToken.None);
             }
@@ -107,6 +112,7 @@ namespace SnakeMultiplayer
             }
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
         }
+        */
     }
 
     // Extension method used to add the middleware to the HTTP request pipeline.

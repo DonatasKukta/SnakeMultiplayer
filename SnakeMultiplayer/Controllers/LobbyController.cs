@@ -26,8 +26,13 @@ namespace SnakeMultiplayer.Controllers
         {
             ViewData["playerName"] = playerName;
             ViewData["lobbyId"] = id;
-            gameServer.createLobby(id, playerName);
-            return View("Views/Lobby/Index.cshtml");
+            bool success = gameServer.AddLobby(playerName, id);
+            if(success)
+                return View("Views/Lobby/Index.cshtml");
+
+            ViewData["ErrorMessage"] = $"Lobby with {id} already exists. Please enter different name";
+            ViewData["playerName"] = playerName;
+            return View("Views/Lobby/CreateLobby.cshtml");
         }
 
         [HttpGet]
