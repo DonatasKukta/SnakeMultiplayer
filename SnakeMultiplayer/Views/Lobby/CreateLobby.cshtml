@@ -1,27 +1,33 @@
 ﻿
 @{
-    ViewData["Title"] = "CreateLobby";
+    ViewData["Title"] = "Create Lobby";
 
     string errorMessage = ViewData["ErrorMessage"] == null ? string.Empty : (string)ViewData["ErrorMessage"];
     int x = 0;
+    //<div class="d-flex justify-content-center container">
 }
 
-<h2>CreateLobby</h2>
 
-<div class="d-flex justify-content-center">
-    @if (!errorMessage.Equals(string.Empty))
-    {
-        <div class="child alert alert-danger" role="alert">
-            @errorMessage
-        </div>
-    }
-        <div class="child">
+<div class="d-flex justify-content-center container">
+    <div class="justify-content-center">
+        <h2>Create Lobby</h2>
+        @if (!errorMessage.Equals(string.Empty))
+        {
+            <div>
+                <p class="alert alert-danger" role="alert">
+                    @errorMessage
+                </p>
+            </div>
+        }
+        <div>
             <form asp-controller="Lobby" asp-action="CreateLobby" method="post">
                 <label> Your nickname:</label>
                 <input type="text" class="form-control" name="playerName">
                 <label> New lobby name:</label>
                 <input type="text" class="form-control" name="id">
+                <br />
                 <button type="submit" class="btn btn-primary">Create</button>
             </form>
         </div>
-</div>
+    </div>
+ </div>
