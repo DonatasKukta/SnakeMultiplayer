@@ -13,6 +13,15 @@ namespace JsonLibrary
         public string type;
         public string body;
 
+        public Message() { }
+        public Message(string s, string l, string t, string b)
+        {
+            this.sender = s;
+            this.lobby = l;
+            this.type = t;
+            this.body = b;
+        }
+
         public static Message Deserialize(string json)
         {
             return JsonConvert.DeserializeObject<Message>(json);
