@@ -61,7 +61,7 @@ namespace SnakeMultiplayer.Services
             }
         }
 
-        public async Task HandleWebSocketAsync(WebSocket webSocket, [FromServices] GameServerService gameServer)
+        public async Task HandleWebSocketAsync(WebSocket webSocket)
         {
             var closeStatus = WebSocketCloseStatus.Empty;
             try
@@ -129,6 +129,20 @@ namespace SnakeMultiplayer.Services
             return lobbies.TryAdd(lobbyName, new Lobby(lobbyName, hostPlayerName, maxPlayers, service));
         }
 
+        public string CanJoin(string lobbyName, string playerName)
+        {
+            if (!lobbies.TryGetValue(lobbyName, out Lobby lobby))
+                return $"Lobby {lobbyName} does not exist. Please try a different name";
+            else if(!lobby.IsActive())
+                return $"Lobby {lobbyName} is not active, therefore you cannot join it.";
+            else if (lobby.IsFull())
+                return $"Lobby {lobbyName} is full. Please try again later.";
+            else if (lobby.PlayerExists(playerName))
+                return $"Name {playerName} is already taken. Please use another name.";
+            else
+                return string.Empty;
+        }
+
         public bool LobbyExists(string lobbyName)
         {
             return lobbies.ContainsKey(lobbyName);
@@ -186,6 +200,15 @@ namespace SnakeMultiplayer.Services
                     throw new ArgumentNullException("Attempt to remove player with null string.");
 
                 return players.TryRemove(player, out WebSocket @null);
+            }
+
+            public bool IsFull()
+            {
+                return LobbyService.IsLobbyFull();
+            }
+            public bool IsActive()
+            {
+                return LobbyService.IsActive();
             }
         }
     }

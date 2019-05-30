@@ -32,24 +32,34 @@ namespace SnakeMultiplayer.Controllers
 
             ViewData["ErrorMessage"] = $"Lobby with {id} already exists. Please enter different name";
             ViewData["playerName"] = playerName;
-            return View("Views/Lobby/CreateLobby.cshtml");
+            //return View("Views/Lobby/CreateLobby.cshtml");
+            return View();
         }
 
         [HttpGet]
         public IActionResult JoinLobby(string id = "")
         {
             ViewData["lobbyId"] = id;
-
             return View();
         }
 
         //[HttpPost("/JoinLobby/{playerName}/{id}")]
         [HttpPost]
-        public IActionResult JoinLobby(string id, string playerName)
+        public IActionResult JoinLobby(string id, string playerName, [FromServices] GameServerService gameServer)
         {
             ViewData["playerName"] = playerName;
             ViewData["lobbyId"] = id;
-            return View("Views/Lobby/Index.cshtml");
+            string errorMessage = gameServer.CanJoin(id, playerName);
+            if (errorMessage.Equals(string.Empty))
+            {
+                // TODO: impelment writing to cookies
+                return View("Views/Lobby/Index.cshtml");
+            }
+            else
+            {
+                ViewData["ErrorMessage"] = errorMessage;
+                return View();
+            }
         }
     }
 }
