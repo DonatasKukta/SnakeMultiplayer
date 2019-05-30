@@ -21,12 +21,12 @@ namespace SnakeMultiplayer.Services
         /// <summary>
         /// Represents lobbies and its players, with which server is communicating
         /// </summary>
-        ConcurrentDictionary<string, Lobby> lobbies = new ConcurrentDictionary<string, Lobby>();
+        private ConcurrentDictionary<string, Lobby> lobbies = new ConcurrentDictionary<string, Lobby>();
 
         /// <summary>
         /// Represents the buffer length, in which received messages from web sockets will be stored.
         /// </summary>
-        private  readonly int bufferSize = 1024 * 4; // Get this value from app settings
+        private readonly int bufferSize = 1024 * 4; // Get this value from app settings
         private readonly int maxPlayers = 4;
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -38,12 +38,7 @@ namespace SnakeMultiplayer.Services
             return Task.CompletedTask;
         }
 
-        public bool AddLobby(string hostName, string lobbyName)
-        {
-            return lobbies.TryAdd(lobbyName, new Lobby(lobbyName, hostName, maxPlayers));
-        }
-
-        private bool addPlayerToLobby(string lobby, string player, WebSocket socket)
+        private bool AddPlayerToLobby(string lobby, string player, WebSocket socket)
         {
             try
             {
@@ -51,7 +46,18 @@ namespace SnakeMultiplayer.Services
             }
             catch (KeyNotFoundException ex)
             {
-                throw (ex);
+                throw ex;
+            }
+        }
+
+        public void SendLobbyMessage(string lobby, Message message)
+        {
+            if (!lobbies.TryGetValue(lobby, out Lobby currLobby))
+                return;
+            var sockets = currLobby.GetPlayersWebSockets();
+            foreach (WebSocket socket in sockets)
+            {
+                SendMessageAsync(socket, message);
             }
         }
 
@@ -64,7 +70,7 @@ namespace SnakeMultiplayer.Services
                 string lobby = message.lobby;
                 string playerName = message.sender;
 
-                if (!addPlayerToLobby(lobby, playerName, webSocket))
+                if (!AddPlayerToLobby(lobby, playerName, webSocket))
                     throw new OperationCanceledException($"Could not add player {playerName} to {lobby} lobby.");
                 // While current player is in lobby
 
@@ -76,18 +82,20 @@ namespace SnakeMultiplayer.Services
                     WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                     message = Message.Deserialize(Strings.getString(buffer));
 
+                    lobbies[lobby].LobbyService.ReceiveMessageAsync(message);
                     // Echoing:
-                    SendMessageAsync(webSocket, message);
+                    //SendMessageAsync(webSocket, message);
                 }
             }
-            catch(OperationCanceledException e)
+            catch (OperationCanceledException e)
             {
                 // Unexpected error! try again pls
                 // log exception
+                int x = 0;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-
+                int x = 0;
             }
             finally
             {
@@ -98,9 +106,9 @@ namespace SnakeMultiplayer.Services
             }
         }
 
-        private async void CloseSocketAsync(WebSocket webSocket,  WebSocketCloseStatus status)
+        private async void CloseSocketAsync(WebSocket webSocket, WebSocketCloseStatus status)
         {
-            await webSocket.CloseAsync(status, null,  CancellationToken.None);
+            await webSocket.CloseAsync(status, null, CancellationToken.None);
         }
 
         private async void SendMessageAsync(WebSocket webSocket, Message message)
@@ -116,9 +124,9 @@ namespace SnakeMultiplayer.Services
             return Message.Deserialize(Strings.getString(buffer));
         }
 
-        public bool TryCreateLobby(string lobbyName, string hostPlayerName)
+        public bool TryCreateLobby(string lobbyName, string hostPlayerName, GameServerService service)
         {
-            return lobbies.TryAdd(lobbyName, new Lobby(lobbyName, hostPlayerName, maxPlayers));
+            return lobbies.TryAdd(lobbyName, new Lobby(lobbyName, hostPlayerName, maxPlayers, service));
         }
 
         public bool LobbyExists(string lobbyName)
@@ -126,10 +134,9 @@ namespace SnakeMultiplayer.Services
             return lobbies.ContainsKey(lobbyName);
         }
 
-        public bool playerExists(string lobbyName, string playerName)
+        public bool PlayerExists(string lobbyName, string playerName)
         {
-            Lobby current;
-            if (lobbies.TryGetValue(lobbyName,out current))
+            if (lobbies.TryGetValue(lobbyName, out Lobby current))
             {
                 return current.PlayerExists(playerName);
             }
@@ -141,13 +148,13 @@ namespace SnakeMultiplayer.Services
 
         private class Lobby
         {
-            public ConcurrentDictionary<string, WebSocket> players { get; private set; }
-            public LobbyService lobby { get; private set; }
+            private ConcurrentDictionary<string, WebSocket> players;
+            public LobbyService LobbyService { get; private set; }
 
-            public Lobby(string name, string hostName, int maxPlayers)
+            public Lobby(string name, string hostName, int maxPlayers, GameServerService gameServer)
             {
                 this.players = new ConcurrentDictionary<string, WebSocket>();
-                this.lobby = new LobbyService(name, hostName, maxPlayers);
+                this.LobbyService = new LobbyService(name, hostName, maxPlayers, gameServer);
             }
 
             public bool AddPlayer(string playerName, WebSocket webSocket)
@@ -160,6 +167,11 @@ namespace SnakeMultiplayer.Services
                 return players.TryAdd(playerName, webSocket);
             }
 
+            public WebSocket[] GetPlayersWebSockets()
+            {
+                return players.Values.ToArray();
+            }
+
             public bool PlayerExists(string playerName)
             {
                 if (playerName == null)
@@ -168,13 +180,12 @@ namespace SnakeMultiplayer.Services
                 return players.ContainsKey(playerName);
             }
 
-            public bool removePlayer(string player)
+            public bool RemovePlayer(string player)
             {
                 if (player == null)
                     throw new ArgumentNullException("Attempt to remove player with null string.");
 
-                WebSocket @null;
-                return players.TryRemove(player,out @null);
+                return players.TryRemove(player, out WebSocket @null);
             }
         }
     }

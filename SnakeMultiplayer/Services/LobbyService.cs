@@ -12,28 +12,30 @@ namespace SnakeMultiplayer.Services
 {
     public class LobbyService
     {
-        public string ID {  get; private set; }
-        public LobbyStates state { get; private set; }
+        public readonly string ID;
+        public LobbyStates State { get; private set; }
         private ConcurrentDictionary<string, Snake> players = new ConcurrentDictionary<string, Snake>();
-        private string HostPlayer;
-        private int maxPlayers;
+        private readonly string hostPlayer;
+        private readonly int maxPlayers;
         private readonly DateTime creationTime;
+        private readonly GameServerService gameServer;
         private Arena arena;
 
-        public LobbyService(string id, string host, int maxPlayers)
+        public LobbyService(string id, string host, int maxPlayers,[FromServices] GameServerService gameServer)
         {
             this.ID = id;
-            this.HostPlayer = host;
-            this.state = LobbyStates.Idle;
+            this.hostPlayer = host;
+            this.State = LobbyStates.Idle;
             this.maxPlayers = maxPlayers;
             this.creationTime = DateTime.Now;
+            this.gameServer = gameServer;
         }
 
         public string AddPlayer(string playerName, WebSocket socket)
         {
-            if (isLobbyFull())
+            if (IsLobbyFull())
                 return "Lobby is full.";
-            else if (playerExists(playerName))
+            else if (PlayerExists(playerName))
                 return $"Player {playerName} already exists in lobby";
             else
             {
@@ -47,17 +49,23 @@ namespace SnakeMultiplayer.Services
             }
         }
         
-        private async void ReceiveMessageAsync(Message message)
+        public async void ReceiveMessageAsync(Message message)
+        {
+            //Echoing
+            SendLobbyMessage(message);
+        }
+
+        private async void SendLobbyMessage(Message message)
+        {
+            gameServer.SendLobbyMessage(this.ID, message);
+        }
+
+        private async void SendPlayerMessage(Message message )
         {
             throw new NotImplementedException();
         }
 
-        private async void SendMessage(Message message )
-        {
-            throw new NotImplementedException();
-        }
-
-        private bool playerExists(string playerName)
+        private bool PlayerExists(string playerName)
         {
             foreach(var player in players)
             {
@@ -67,12 +75,12 @@ namespace SnakeMultiplayer.Services
             return false;
         }
 
-        public bool isLobbyFull()
+        public bool IsLobbyFull()
         {
             return maxPlayers <= players.Count ? true : false;
         }
 
-        public bool isActive()
+        public bool IsActive()
         {
             return players.Count > 0 ? true : false;
         }
