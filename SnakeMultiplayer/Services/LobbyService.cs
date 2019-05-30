@@ -14,10 +14,10 @@ namespace SnakeMultiplayer.Services
     {
         public string ID {  get; private set; }
         public LobbyStates state { get; private set; }
-        private ConcurrentDictionary<string, WebSocket> players = new ConcurrentDictionary<string, WebSocket>();
+        private ConcurrentDictionary<string, Snake> players = new ConcurrentDictionary<string, Snake>();
         private string HostPlayer;
         private int maxPlayers;
-        private DateTime creationTime;
+        private readonly DateTime creationTime;
         private Arena arena;
 
         public LobbyService(string id, string host, int maxPlayers)
@@ -26,6 +26,7 @@ namespace SnakeMultiplayer.Services
             this.HostPlayer = host;
             this.state = LobbyStates.Idle;
             this.maxPlayers = maxPlayers;
+            this.creationTime = DateTime.Now;
         }
 
         public string AddPlayer(string playerName, WebSocket socket)
@@ -36,36 +37,24 @@ namespace SnakeMultiplayer.Services
                 return $"Player {playerName} already exists in lobby";
             else
             {
-                if (players.TryAdd(playerName, socket))
+                if (players.TryAdd(playerName, new Snake(new Coordinate(1,1))))
                 {
-                    //ReceiveMessageAsync(socket);
-                    SendMessage(socket, "Sekmingai pridetas i lobby", WebSocketMessageType.Text, true);
+                    //SendMessage(socket, "Sekmingai pridetas i lobby", WebSocketMessageType.Text, true);
                     return string.Empty;
                 }
                 else
-                    return "An error has occured";
+                    return "An error has occured. Please try again later.";
             }
         }
         
-        private async void ReceiveMessageAsync(WebSocket webSocket)
+        private async void ReceiveMessageAsync(Message message)
         {
-            var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            while (!result.CloseStatus.HasValue)
-            {
-                //await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
-                string receivedMessage = Strings.getString(buffer);
-                SendMessage(webSocket, receivedMessage, result.MessageType, result.EndOfMessage);
-
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            }
-            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+            throw new NotImplementedException();
         }
 
-        private async void SendMessage(WebSocket webSocket,string message, WebSocketMessageType mtype, bool endOfMessage)
+        private async void SendMessage(Message message )
         {
-            byte[] buffer = Strings.getBytes(message);
-            await webSocket.SendAsync(new ArraySegment<byte>(buffer), mtype, endOfMessage, CancellationToken.None);
+            throw new NotImplementedException();
         }
 
         private bool playerExists(string playerName)
@@ -78,7 +67,7 @@ namespace SnakeMultiplayer.Services
             return false;
         }
 
-        private bool isLobbyFull()
+        public bool isLobbyFull()
         {
             return maxPlayers <= players.Count ? true : false;
         }
@@ -87,7 +76,6 @@ namespace SnakeMultiplayer.Services
         {
             return players.Count > 0 ? true : false;
         }
-
     }
 
     public enum LobbyStates

@@ -12,7 +12,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace SnakeMultiplayer.Services
 {
     /// <summary>
-    /// Gives abstraction layer to web socket based communication.
+    /// Gives abstraction layer to web socket based communication:
+    /// Distributes incoming messages to relevant lobbies and 
+    /// forwads messages from lobbies to web sockets
     /// </summary>
     public class GameServerService : IHostedService
     {
@@ -175,26 +177,6 @@ namespace SnakeMultiplayer.Services
                 return players.TryRemove(player,out @null);
             }
         }
-        /*
-        public async void Forward(WebSocket webSocket, Message message)
-        {
-            if (lobbyExists(message.lobby) && message.type.Equals("join"))
-            {
-                string result = lobbies[message.lobby].AddPlayer(message.sender, webSocket);
-                if (!result.Equals(string.Empty))
-                {
-                    await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, result, CancellationToken.None);
-                }
-            }
-            else if (!message.type.Equals("join"))
-            {
-                await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, "Unexpected message type.", CancellationToken.None);
-            }
-            else
-            {
-                await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, "Unexpected protocol behaviour.", CancellationToken.None);
-            }
-        }*/
     }
 }
 
