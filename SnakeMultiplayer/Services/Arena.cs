@@ -64,7 +64,7 @@ namespace SnakeMultiplayer.Services
                     return false;
             }
 
-            Snake newSnake = new Snake(initCord);
+            Snake newSnake = new Snake(initCord, "green");
             newSnake.SnakeMoved += OnSnakeMovemenent;
             snakes.Add(playerName, newSnake);
 

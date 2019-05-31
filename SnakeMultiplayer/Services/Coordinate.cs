@@ -44,7 +44,7 @@ namespace SnakeMultiplayer.Services
 
         public override string ToString()
         {
-            return String.Format($"({x};{y})");
+            return String.Format($"{x}:{y};");
         }
     }
     

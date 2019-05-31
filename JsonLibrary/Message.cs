@@ -14,12 +14,12 @@ namespace JsonLibrary
         public string body;
 
         public Message() { }
-        public Message(string s, string l, string t, string b)
+        public Message(string sender, string lobby, string type, string body)
         {
-            this.sender = s;
-            this.lobby = l;
-            this.type = t;
-            this.body = b;
+            this.sender = sender;
+            this.lobby = lobby;
+            this.type = type;
+            this.body = body;
         }
 
         public static Message Deserialize(string json)

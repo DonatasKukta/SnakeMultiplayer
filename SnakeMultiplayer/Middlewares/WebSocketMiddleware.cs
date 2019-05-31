@@ -36,7 +36,7 @@ namespace SnakeMultiplayer
                 {
                     WebSocket webSocket = await httpContext.WebSockets.AcceptWebSocketAsync();
                     // Pass new web socket to be handled.
-                    await gameServer.HandleWebSocketAsync(webSocket, gameServer);
+                    await gameServer.HandleWebSocketAsync(webSocket);
                 }
                 else
                 {
