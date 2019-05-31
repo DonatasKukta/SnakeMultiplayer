@@ -1,4 +1,16 @@
 ﻿(function () {
+    function getCookie(name) {
+        var value = "; " + document.cookie;
+        var parts = value.split("; " + name + "=");
+        if (parts.length == 2) return parts.pop().split(";").shift();
+    }
+    var PlayerName = getCookie("PlayerName");
+    var LobbyId = getCookie("LobbyId");
+
+    if (PlayerName == null || LobbyId == null) {
+        // Redirect to error page.
+    }
+
     window.addEventListener('resize', reSet, false);
     var gameController = new GameController();
     
@@ -12,7 +24,6 @@
         gameController.send("inicijuota23..");
     }*/
     
-
     document.onkeydown = function (e) {
         switch (e.key) {
             case 'ArrowUp':

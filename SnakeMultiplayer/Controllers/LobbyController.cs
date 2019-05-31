@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using SnakeMultiplayer.Services;
 using System;
 using System.Collections.Generic;
@@ -27,8 +28,13 @@ namespace SnakeMultiplayer.Controllers
             ViewData["playerName"] = playerName;
             ViewData["lobbyId"] = id;
             bool success = gameServer.TryCreateLobby(id, playerName, gameServer);
-            if(success)
+            if (success)
+            {
+                SetCookie("PlayerName", playerName);
+                SetCookie("LobbyId", id);
                 return View("Views/Lobby/Index.cshtml");
+            }
+
 
             ViewData["ErrorMessage"] = $"Lobby with {id} already exists. Please enter different name";
             ViewData["playerName"] = playerName;
@@ -52,7 +58,8 @@ namespace SnakeMultiplayer.Controllers
             string errorMessage = gameServer.CanJoin(id, playerName);
             if (errorMessage.Equals(string.Empty))
             {
-                // TODO: impelment writing to cookies
+                SetCookie("PlayerName", playerName);
+                SetCookie("LobbyId", id);
                 return View("Views/Lobby/Index.cshtml");
             }
             else
@@ -60,6 +67,15 @@ namespace SnakeMultiplayer.Controllers
                 ViewData["ErrorMessage"] = errorMessage;
                 return View();
             }
+        }
+
+        private void SetCookie(string name, string value)
+        {
+            var options = new CookieOptions()
+            {
+                IsEssential = true,
+            };
+            Response.Cookies.Append(name, value, options);
         }
     }
 }
