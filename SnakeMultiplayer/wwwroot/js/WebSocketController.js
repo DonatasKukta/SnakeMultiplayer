@@ -9,8 +9,8 @@
         //this.socketMessageEvent = new Event('onSocketReceivedMessage');
         //this.socketCloseEvent   = new Event('onSocketClosed');
         //this.socketErrorEvent   = new Event('onSocketError');
-
     }
+
     connect() {
         this.socket = new WebSocket(this.connectionUrl);
         this.socket.addEventListener("open", this.onOpen.bind(this));
@@ -35,8 +35,9 @@
     }
 
     onMessage(event) {
-        console.warn("Received message: " + htmlEscape(event.data));
-        this.dispatcher.dispatch("onSocketMessage", htmlEscape(event.data));
+        var MessageObject = JSON.parse(event.data);
+        //console.warn("Received message: ", MessageObject);
+        this.dispatcher.dispatch("onSocketMessage", MessageObject);
     }
 
     send(message) {

@@ -54,8 +54,25 @@ class GameController {
         this.socketController.send(JSON.stringify(message));
     }
 
-    onMessageReceived(e) {
-        console.log("GameController received message:", e, this);
+    onMessageReceived(message) {
+        console.log("GameController received message:", message);
+
+        switch (message.type) {
+            case "Players":
+                // Show all current players
+                var playerUpdate = JSON.parse(message.body);
+                console.warn("New player list: " , playerUpdate);
+                break;
+            case "Update":
+                // Update game state
+                break;
+            case "Start":
+                // Do count down
+                break;
+            case "Close": // ?
+                // close web socket connection, throw error.
+                break;
+        }
     }
 
     beginStub() {

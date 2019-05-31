@@ -7,6 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using JsonLibrary;
 using Microsoft.AspNetCore.Mvc;
+using JsonLibrary;
+
 
 namespace SnakeMultiplayer.Services
 {
@@ -31,7 +33,7 @@ namespace SnakeMultiplayer.Services
             this.gameServer = gameServer;
         }
 
-        public string AddPlayer(string playerName, WebSocket socket)
+        public string AddPlayer(string playerName)
         {
             if (IsLobbyFull())
                 return "Lobby is full.";
@@ -39,14 +41,41 @@ namespace SnakeMultiplayer.Services
                 return $"Player {playerName} already exists in lobby";
             else
             {
-                if (players.TryAdd(playerName, new Snake(new Coordinate(1,1))))
+                if (players.TryAdd(playerName, new Snake(new Coordinate(1,1), "black")))
                 {
-                    //SendMessage(socket, "Sekmingai pridetas i lobby", WebSocketMessageType.Text, true);
+                    // Update lobby status to all lobby players.
+                    //Message playersStatus = CreatePlayerStatusMessage();
+                    //SendLobbyMessage(playersStatus);
                     return string.Empty;
                 }
                 else
                     return "An error has occured. Please try again later.";
             }
+        }
+
+        public void SendPLayerStatusMessage()
+        {
+            Message playersStatus = CreatePlayerStatusMessage();
+            SendLobbyMessage(playersStatus);
+        }
+
+        private Message CreatePlayerStatusMessage()
+        {
+            string players = Players.Serialize(getallPlayerStatus());
+            return new Message("server", this.ID, "Players", players);
+        }
+
+        private Players getallPlayerStatus()
+        {
+            List<Player> list = new List<Player>(players.Count);
+            foreach(var player in players)
+            {
+                Player newPlayer = new Player();
+                newPlayer.name = player.Key;
+                newPlayer.color = player.Value.color;
+                list.Add(newPlayer);
+            }
+            return new Players(list);
         }
         
         public async void ReceiveMessageAsync(Message message)
@@ -63,6 +92,11 @@ namespace SnakeMultiplayer.Services
         private async void SendPlayerMessage(Message message )
         {
             throw new NotImplementedException();
+        }
+
+        public bool RemovePlayer(string playerName)
+        {
+            return players.TryRemove(playerName, out Snake value);
         }
 
         private bool PlayerExists(string playerName)
@@ -82,7 +116,9 @@ namespace SnakeMultiplayer.Services
 
         public bool IsActive()
         {
-            return players.Count > 0 ? true : false;
+            return true;
+            // Take into account time of existance.
+            //return players.Count > 0 ? true : false; 
         }
     }
 

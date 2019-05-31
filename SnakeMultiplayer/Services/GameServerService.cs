@@ -38,8 +38,10 @@ namespace SnakeMultiplayer.Services
             return Task.CompletedTask;
         }
 
-        private bool AddPlayerToLobby(string lobby, string player, WebSocket socket)
+        private string AddPlayerToLobby(string lobby, string player, WebSocket socket)
         {
+            if (socket == null)
+                throw new ArgumentNullException("Tried to add null web socket to concurrent list");
             try
             {
                 return lobbies[lobby].AddPlayer(player, socket);
@@ -69,19 +71,19 @@ namespace SnakeMultiplayer.Services
                 Message message = await ReceiveMessageAsync(webSocket);
                 string lobby = message.lobby;
                 string playerName = message.sender;
+                string errorMessage = AddPlayerToLobby(lobby, playerName, webSocket);
+                if (!errorMessage.Equals(string.Empty))
+                    throw new OperationCanceledException("errorMessage");
 
-                if (!AddPlayerToLobby(lobby, playerName, webSocket))
-                    throw new OperationCanceledException($"Could not add player {playerName} to {lobby} lobby.");
+                lobbies[lobby].LobbyService.SendPLayerStatusMessage();
+
                 // While current player is in lobby
-
-                SendMessageAsync(webSocket, new Message("Server", "None", "Join", "Prisjungti pavyko"));
                 while (lobbies[lobby].PlayerExists(playerName))
                 {
                     //message = await ReceiveMessageAsync(webSocket);
                     byte[] buffer = new byte[bufferSize];
                     WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                     message = Message.Deserialize(Strings.getString(buffer));
-
                     lobbies[lobby].LobbyService.ReceiveMessageAsync(message);
                     // Echoing:
                     //SendMessageAsync(webSocket, message);
@@ -160,6 +162,7 @@ namespace SnakeMultiplayer.Services
             }
         }
 
+        // Implement locks on modification methods?
         private class Lobby
         {
             private ConcurrentDictionary<string, WebSocket> players;
@@ -171,14 +174,26 @@ namespace SnakeMultiplayer.Services
                 this.LobbyService = new LobbyService(name, hostName, maxPlayers, gameServer);
             }
 
-            public bool AddPlayer(string playerName, WebSocket webSocket)
+            public string AddPlayer(string playerName, WebSocket webSocket)
             {
                 if (playerName == null)
-                    throw new ArgumentNullException("Attempt to add player with null string.");
+                    return "Attempt to add player with null string.";
                 else if (webSocket == null)
-                    throw new ArgumentNullException($"Attempt to add player {playerName} with null WebSocket.");
-
-                return players.TryAdd(playerName, webSocket);
+                    return $"Attempt to add player {playerName} with null WebSocket.";
+                else if (!IsActive())
+                    return "Lobby {LobbyService.ID} is not active. Please join another lobby";
+                else if (IsFull())
+                    return $"Lobby {LobbyService.ID} is full. Please join another lobby.";
+                string errorMessage = LobbyService.AddPlayer(playerName);
+                if (!errorMessage.Equals(string.Empty))
+                    return errorMessage;
+                if(!players.TryAdd(playerName, webSocket))
+                {
+                    LobbyService.RemovePlayer(playerName);
+                    // log
+                    return $"Unexpected error while trying to join {LobbyService.ID}. Please try again later";
+                }
+                return string.Empty;
             }
 
             public WebSocket[] GetPlayersWebSockets()
