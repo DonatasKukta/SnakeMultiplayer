@@ -12,7 +12,7 @@
     }
 
     window.addEventListener('resize', reSet, false);
-    var gameController = new GameController();
+    var gameController = new GameController(PlayerName, LobbyId);
     
     gameController.setEnvironment();
     gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder)); gameController.doStubActions();
@@ -31,7 +31,6 @@
                 break;
             case 'ArrowDown':
                 gameController.sendUpdate(MoveDirection.Down);
-                gameController.onOpenedSocket();
                 break;
             case 'ArrowLeft':
                 gameController.sendUpdate(MoveDirection.Left);

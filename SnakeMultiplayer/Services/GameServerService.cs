@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JsonLibrary;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace SnakeMultiplayer.Services
 {
@@ -83,21 +84,21 @@ namespace SnakeMultiplayer.Services
                     //message = await ReceiveMessageAsync(webSocket);
                     byte[] buffer = new byte[bufferSize];
                     WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                    message = Message.Deserialize(Strings.getString(buffer));
-                    lobbies[lobby].LobbyService.ReceiveMessageAsync(message);
-                    // Echoing:
-                    //SendMessageAsync(webSocket, message);
+                    string receivedMessage = Strings.getString(buffer);
+                    dynamic msgObj = Strings.getObject(receivedMessage);
+                    Message msg = new Message((string)msgObj.sender, (string)msgObj.lobby, (string) msgObj.type, msgObj.body);
+                    lobbies[lobby].LobbyService.HandleMessage(msg);
                 }
             }
             catch (OperationCanceledException e)
             {
                 // Unexpected error! try again pls
                 // log exception
-                int x = 0;
+                Console.WriteLine(e.Message);
             }
             catch (Exception e)
             {
-                int x = 0;
+                Console.WriteLine(e.Message);
             }
             finally
             {
@@ -123,7 +124,8 @@ namespace SnakeMultiplayer.Services
         {
             byte[] buffer = new byte[bufferSize];
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            return Message.Deserialize(Strings.getString(buffer));
+            string text = Strings.getString(buffer);
+            return Message.Deserialize(text);
         }
 
         public bool TryCreateLobby(string lobbyName, string hostPlayerName, GameServerService service)

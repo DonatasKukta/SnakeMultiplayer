@@ -61,11 +61,12 @@ namespace SnakeMultiplayer.Services
 
         private Message CreatePlayerStatusMessage()
         {
-            string players = Players.Serialize(getallPlayerStatus());
-            return new Message("server", this.ID, "Players", players);
+            //string players = Players.Serialize(getallPlayerStatus());
+            
+            return new Message("server", this.ID, "Players", new { players = getallPlayerStatus() });
         }
 
-        private Players getallPlayerStatus()
+        private List<Player> getallPlayerStatus()
         {
             List<Player> list = new List<Player>(players.Count);
             foreach(var player in players)
@@ -75,13 +76,32 @@ namespace SnakeMultiplayer.Services
                 newPlayer.color = player.Value.color;
                 list.Add(newPlayer);
             }
-            return new Players(list);
+            return list;
         }
         
-        public async void ReceiveMessageAsync(Message message)
+        public void HandleMessage(Message message)
         {
-            //Echoing
-            SendLobbyMessage(message);
+            try
+            {
+                switch (message.type)
+                {
+                    case "Players":
+                        SendPLayerStatusMessage();
+                        break;
+                    case "Update":
+                        SendLobbyMessage(new Message("server", this.ID, "Update", 
+                            new { messageUpdate = "Zinute gauta. Veiksmas ale uzfiksuotas" }));
+                        break;
+                    default: //echo
+                        SendLobbyMessage(message);
+                        break;
+                }
+
+            }
+            catch (Exception ex)
+            {
+
+            }
         }
 
         private async void SendLobbyMessage(Message message)

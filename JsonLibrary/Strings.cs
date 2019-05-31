@@ -24,5 +24,10 @@ namespace JsonLibrary
             Buffer.BlockCopy(charsBuffer, 0, newBuffer, 0, text.Length);
             return newBuffer;
         }
+
+        public static dynamic getObject(string json)
+        {
+            return JsonConvert.DeserializeObject(json);
+        }
     }
 }

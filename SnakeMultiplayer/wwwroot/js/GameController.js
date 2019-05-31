@@ -30,7 +30,7 @@
 }
 
 class GameController {
-    constructor() {
+    constructor(playerName, lobbyId) {
         this.snakes = new Array();
         this.snakeCount = 0;
         //this.socket;
@@ -40,18 +40,18 @@ class GameController {
         this.socketDispatcher.on("onSocketMessage", this.onMessageReceived.bind(this));
         this.socketDispatcher.on("onSocketClose", this.onMessageReceived.bind(this));
         this.socketDispatcher.on("onSocketError", this.onMessageReceived.bind(this));
+        this.playerName = playerName;
+        this.lobbyId = lobbyId;
 
-        this.socketController = new WebSocketController(this.socketDispatcher);
+        this.socketController = new WebSocketController(this.playerName, this.lobbyId, this.socketDispatcher);
         this.socketController.connect();
         //this.connect();
     }
 
     onOpenedSocket(e) {
-        console.log(this);
-        //this.socketController.send("siunciam 123");
-        //this.socketController.send("siunciam 431");
-        var message = {sender : "Donatas", lobby:"Lobbis", type : "join", body : "dar nera body"};
-        this.socketController.send(JSON.stringify(message));
+        console.log("Socket opened");
+        var messageBody = "";
+        this.socketController.send("Players", JSON.stringify(messageBody));
     }
 
     onMessageReceived(message) {
@@ -60,11 +60,13 @@ class GameController {
         switch (message.type) {
             case "Players":
                 // Show all current players
-                var playerUpdate = JSON.parse(message.body);
+                var playerUpdate = message.body.players;
                 console.warn("New player list: " , playerUpdate);
                 break;
             case "Update":
                 // Update game state
+                var gameUpdate = message.body;
+                console.warn("New update message: ", gameUpdate);
                 break;
             case "Start":
                 // Do count down
@@ -109,8 +111,8 @@ class GameController {
     }
 
     sendUpdate(direction) {
-       // this.socketController.send({ this.name, direction });
-        //var
+        var messageBody = { direction : direction };
+        this.socketController.send("Update",JSON.stringify(messageBody));
     }
 
     drawSnakes() {

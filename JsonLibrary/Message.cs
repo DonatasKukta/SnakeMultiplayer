@@ -11,10 +11,10 @@ namespace JsonLibrary
         public string sender;
         public string lobby;
         public string type;
-        public string body;
+        public object body;
 
         public Message() { }
-        public Message(string sender, string lobby, string type, string body)
+        public Message(string sender, string lobby, string type, object body)
         {
             this.sender = sender;
             this.lobby = lobby;

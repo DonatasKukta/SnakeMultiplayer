@@ -1,11 +1,13 @@
 ﻿class WebSocketController {
-    constructor(dispatcher) {
+    constructor(playerName, lobbyId, dispatcher) {
         this.dispatcher = dispatcher;
         var scheme = document.location.protocol === "https:" ? "wss" : "ws";
         var port = document.location.port ? (":" + document.location.port) : "";
         this.connectionUrl = scheme + "://" + document.location.hostname + port + "/ws";
         this.socket;
         console.log("Connection URL: " + this.connectionUrl);
+        this.playerName = playerName;
+        this.lobbyId = lobbyId;
         //this.socketMessageEvent = new Event('onSocketReceivedMessage');
         //this.socketCloseEvent   = new Event('onSocketClosed');
         //this.socketErrorEvent   = new Event('onSocketError');
@@ -20,7 +22,7 @@
     }
 
     onOpen(event) {
-        console.log("Socket opened", this);
+        console.log("Socket opened");
         this.dispatcher.dispatch("onSocketOpen", event);
     }
 
@@ -40,14 +42,25 @@
         this.dispatcher.dispatch("onSocketMessage", MessageObject);
     }
 
-    send(message) {
+    send(messageType, messageBody) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             console.warn("trying to send data to not open socket!");
             return false;
         }
-        this.socket.send(message);
-        console.log("Sent message: " + message);
+        var message = this.wrapMessage(messageType, messageBody);
+        this.socket.send(JSON.stringify(message));
+        console.log("Sent message: " , message);
         return true;
+    }
+
+    wrapMessage(messageType, messageBody) {
+        var message = {
+            sender: this.playerName,
+            lobby: this.lobbyId,
+            type: messageType,
+            body: messageBody
+        };
+        return message;
     }
 
     close() {
