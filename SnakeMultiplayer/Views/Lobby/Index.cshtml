@@ -6,24 +6,30 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
     string playerName = (string)ViewData["playerName"];
     string lobbyName = (string)ViewData["lobbyId"];
+    bool isHost = ViewData["IsHost"] == null ? false : (bool)ViewData["IsHost"];
 }
 
 <div class="d-flex justify-content-center">
     <div class="d-flex justify-content-center">
-        <h1> @ViewData["lobbyId"]</h1>
+        <h1> @ViewData["lobbyId"] lobby</h1>
     </div>
 </div>
-
-<div>
-    <h4>Player name = @playerName</h4>
-    <h4> Lobby ID = @lobbyName</h4>
+<br />
+<div id="playerCards" class="d-flex justify-content-center">
 </div>
+<br />
+@if (isHost)
+{
+<div class="d-flex justify-content-center">
+    <button id="startButton" type="button" class="btn btn-success">Start game</button>
+</div>
+}
 
 <div id="CanvasDiv" align="center">
-    <canvas id="Canvas">  </canvas>
+    <canvas id="Canvas" style="visibility: hidden;">  </canvas>
 </div>
 
-
+<script src="~/js/Message.js"></script>
 <script src="~/js/CustomLinkedList.js"></script>
 <script src="~/js/WebSocketController.js"></script>
 

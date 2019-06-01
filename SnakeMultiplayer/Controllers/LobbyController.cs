@@ -32,6 +32,7 @@ namespace SnakeMultiplayer.Controllers
             {
                 SetCookie("PlayerName", playerName);
                 SetCookie("LobbyId", id);
+                ViewData["IsHost"] = true;
                 return View("Views/Lobby/Index.cshtml");
             }
 
