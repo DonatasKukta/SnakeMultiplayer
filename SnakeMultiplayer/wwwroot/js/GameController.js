@@ -30,10 +30,11 @@
 }
 
 class GameController {
-    constructor(playerName, lobbyId) {
+    constructor(playerName, lobbyId, mainDispatcher) {
         this.snakes = new Array();
         this.snakeCount = 0;
         //this.socket;
+        this.mainDispatcher = mainDispatcher;
         this.socketDispatcher = new Dispatcher();
         //this.socketDispatcher.on("onSocketOpen", this.onOpenedSocket.call(this, event));
         this.socketDispatcher.on("onSocketOpen", this.onOpenedSocket.bind(this));
@@ -61,7 +62,8 @@ class GameController {
             case "Players":
                 // Show all current players
                 var playerUpdate = message.body.players;
-                console.warn("New player list: " , playerUpdate);
+                console.warn("New player list: ", playerUpdate);
+                this.mainDispatcher.dispatch("onPlayerListReceived", playerUpdate);
                 break;
             case "Update":
                 // Update game state
