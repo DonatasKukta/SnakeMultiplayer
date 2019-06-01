@@ -16,15 +16,20 @@
     }
 
 
+
     window.addEventListener('resize', reSet, false);
     var MainDispatcher = new Dispatcher();
     MainDispatcher.on("onPlayerListReceived", updatePlayers.bind(this));
+    MainDispatcher.on("onExitReceived", redirectToErrorPage.bind(this));
+
 
     var gameController = new GameController(PlayerName, LobbyId, MainDispatcher);
     gameController.setEnvironment();
     gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder)); gameController.doStubActions();
     
-    
+    window.addEventListener('beforeunload', (event) => {
+        gameController.socketController.close();
+    });    
     document.onkeydown = function (e) {
         switch (e.key) {
             case 'ArrowUp':
@@ -47,10 +52,13 @@
         gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder));
         gameController.drawSnakes();       
     }
+    function onLobbyExit() {
+
+    }
 
     function onStartGameButtonClick(e) {
-        console.warn("Iskviestas pradėjimo mygtukas");
-        
+        //console.warn("Iskviestas pradėjimo mygtukas");
+        this.gameController.sendUpdate();
     }
 
     function onCountDownEvent(e) {
@@ -110,7 +118,30 @@
         });
     }
 
-    function onSnakeMovement() {
+    function redirectToErrorPage(message) {
+        submitForm("/Home/Error", message);
+    }
+    // Source: https://stackoverflow.com/questions/133925/javascript-post-request-like-a-form-submit
+    function submitForm(path, params, method = 'post') {
 
+        // The rest of this code assumes you are not using a library.
+        // It can be made less wordy if you use one.
+        const form = document.createElement('form');
+        form.method = method;
+        form.action = path;
+
+        for (const key in params) {
+            if (params.hasOwnProperty(key)) {
+                const hiddenField = document.createElement('input');
+                hiddenField.type = 'hidden';
+                hiddenField.name = key;
+                hiddenField.value = params[key];
+
+                form.appendChild(hiddenField);
+            }
+        }
+
+        document.body.appendChild(form);
+        form.submit();
     }
 })();
