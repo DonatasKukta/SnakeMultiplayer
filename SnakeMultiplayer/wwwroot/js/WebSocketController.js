@@ -65,9 +65,9 @@
 
     close() {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.log("socket not connected");
+            console.log("Trie to close not connected socket");
         }
-        this.socket.close(1000, "Closing from client");
+        this.socket.close(1000, "Closing web socket from client");
     }
 
     getSocketState() {

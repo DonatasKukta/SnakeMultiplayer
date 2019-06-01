@@ -73,8 +73,12 @@ class GameController {
             case "Start":
                 // Do count down
                 break;
-            case "Close": // ?
+            case "Close":
                 // close web socket connection, throw error.
+                this.mainDispatcher.dispatch("onExitReceived", message.body);
+                break;
+            case "Exit":
+                this.mainDispatcher.dispatch("onExitReceived", message.body);
                 break;
         }
     }

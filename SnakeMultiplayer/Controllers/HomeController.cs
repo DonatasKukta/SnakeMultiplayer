@@ -15,6 +15,13 @@ namespace SnakeMultiplayer.Controllers
         {
             return View();
         }
+        [HttpPost]
+        public IActionResult Error(string errorMessage = 
+            "An error has occured.\n We are already taking action to prevent this error from happening.")
+        {
+            ViewData["ErrorMessage"] = errorMessage;
+            return View("Views/Home/Index.cshtml");
+        }
 
         public IActionResult About()
         {
