@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,28 +12,34 @@ namespace SnakeMultiplayer.Services
     public class Arena
     {
         protected Cells[,] board;
-        protected Dictionary<string, Snake> snakes;
-        protected Dictionary<string, MoveDirection> pendingActions;
+        protected ConcurrentDictionary<string, Snake> snakes;
+        protected ConcurrentDictionary<string, MoveDirection> pendingActions;
         protected int width;
         protected int height;
         protected bool isWall;
         
-        public Arena(int width, int height, bool isWall)
+        public Arena(int width, int height, bool isWall, ConcurrentDictionary<string, Snake> players)
         {
             board = new Cells[width, height];
             this.height = height;
             this.width = width;
 
-            pendingActions = new Dictionary<string, MoveDirection>();
+            snakes = players;
+            pendingActions = new ConcurrentDictionary<string, MoveDirection>();
             this.isWall = isWall;
         }
 
         /// <summary>
         /// Sets current pending actions to snakes
         /// </summary>
-        private void setPendingActions()
+        private void SetPendingActions()
         {
 
+        }
+
+        private void ClearPendingActions()
+        {
+            // Set last action to be next action
         }
 
         /// <summary>
@@ -64,9 +71,9 @@ namespace SnakeMultiplayer.Services
                     return false;
             }
 
-            Snake newSnake = new Snake(initCord, "green");
-            newSnake.SnakeMoved += OnSnakeMovemenent;
-            snakes.Add(playerName, newSnake);
+            //Snake newSnake = new Snake(initCord, "green");
+            //newSnake.SnakeMoved += OnSnakeMovemenent;
+            //snakes.Add(playerName, newSnake);
 
             return true;
         }
