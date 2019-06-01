@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using JsonLibrary;
 
 namespace SnakeMultiplayer.Services
 {
@@ -18,15 +19,28 @@ namespace SnakeMultiplayer.Services
         protected int height;
         protected bool isWall;
         
-        public Arena(int width, int height, bool isWall, ConcurrentDictionary<string, Snake> players)
+        public Arena(ConcurrentDictionary<string, Snake> players)
         {
-            board = new Cells[width, height];
-            this.height = height;
-            this.width = width;
-
             snakes = players;
             pendingActions = new ConcurrentDictionary<string, MoveDirection>();
-            this.isWall = isWall;
+        }
+
+        public void SetSettings(Settings settings)
+        {
+            this.width = settings.cellCount;
+            this.height = settings.cellCount;
+            this.isWall = settings.isWall;
+        }
+
+        private void PrepareForNewGame()
+        {
+            // create new board of cells
+            this.board = new Cells[width, height];
+            // set initial positions for snakes 
+
+            // set snakes next pending positions
+
+            // raise status update
         }
 
         /// <summary>

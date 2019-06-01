@@ -5,6 +5,7 @@ using System.Text;
 
 namespace JsonLibrary
 {
+    [JsonObject]
     public class Players
     {
         public List<Player> players;
@@ -22,15 +23,12 @@ namespace JsonLibrary
             return JsonConvert.SerializeObject(m);
         }
     }
-
+    [JsonObject]
     public class Player
     {
         public string name;
         public string color;
-        /// <summary>
-        /// 
-        /// </summary>
-        //List<string> body;
+        public string type;
     }
 
 }

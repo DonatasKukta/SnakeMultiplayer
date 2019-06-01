@@ -32,6 +32,7 @@ namespace SnakeMultiplayer.Services
             this.maxPlayers = maxPlayers;
             this.creationTime = DateTime.Now;
             this.gameServer = gameServer;
+            this.arena = new Arena(players);
         }
 
         public string AddPlayer(string playerName)
@@ -107,12 +108,20 @@ namespace SnakeMultiplayer.Services
                     case "Players":
                         SendPLayerStatusMessage();
                         break;
+                    case "Settings":
+                        if (message.sender.Equals(hostPlayer))
+                        {
+                            //Debug.WriteLine("Gauti settings:" + message.body.ToString());
+                            var settings = Settings.Deserialize(message.body);
+                            this.arena.SetSettings(settings);
+                        }
+                        break;
                     case "Update":
                         SendLobbyMessage(new Message("server", this.ID, "Update",
                             new { messageUpdate = "Zinute gauta. Veiksmas ale uzfiksuotas" }));
                         break;
                     default: //echo
-                        SendLobbyMessage(message);
+                        Debug.WriteLine($"---Unexpected message from {message.sender}, content: {message.body.ToString()}");
                         break;
                 }
             }

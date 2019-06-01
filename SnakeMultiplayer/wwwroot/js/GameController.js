@@ -51,8 +51,8 @@ class GameController {
 
     onOpenedSocket(e) {
         console.log("Socket opened");
-        var messageBody = "";
-        this.socketController.send("Players", JSON.stringify(messageBody));
+        this.sendPlayerListRequest();
+        this.sendSettingUpdate();
     }
 
     onMessageReceived(message) {
@@ -116,9 +116,20 @@ class GameController {
 
     }
 
-    sendUpdate(direction) {
+    sendPlayerListRequest() {
+        var messageBody = "";
+        this.socketController.send("Players", JSON.stringify(messageBody));
+    }
+
+    sendMovementUpdate(direction) {
         var messageBody = { direction : direction };
         this.socketController.send("Update",JSON.stringify(messageBody));
+    }
+
+    sendSettingUpdate() {
+        var settings = { cellCount : this.cellContainer.gridSize, isWall: false };
+
+        this.socketController.send("Settings", settings);
     }
 
     drawSnakes() {

@@ -33,16 +33,16 @@
     document.onkeydown = function (e) {
         switch (e.key) {
             case 'ArrowUp':
-                gameController.sendUpdate(MoveDirection.Up);
+                gameController.sendMovementUpdate(MoveDirection.Up);
                 break;
             case 'ArrowDown':
-                gameController.sendUpdate(MoveDirection.Down);
+                gameController.sendMovementUpdate(MoveDirection.Down);
                 break;
             case 'ArrowLeft':
-                gameController.sendUpdate(MoveDirection.Left);
+                gameController.sendMovementUpdate(MoveDirection.Left);
                 break;
             case 'ArrowRight':
-                gameController.sendUpdate(MoveDirection.Right);
+                gameController.sendMovementUpdate(MoveDirection.Right);
                 break;
         }
     };
@@ -52,6 +52,11 @@
         gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder));
         gameController.drawSnakes();       
     }
+
+    function onUpdateSettings() {
+        this.gameController.sendSettingUpdate();
+    }
+
     function onLobbyExit() {
 
     }
