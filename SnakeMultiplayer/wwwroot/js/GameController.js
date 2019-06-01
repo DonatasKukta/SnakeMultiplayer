@@ -62,13 +62,13 @@ class GameController {
             case "Players":
                 // Show all current players
                 var playerUpdate = message.body.players;
-                console.warn("New player list: ", playerUpdate);
+                console.log("New player list: ", playerUpdate);
                 this.mainDispatcher.dispatch("onPlayerListReceived", playerUpdate);
                 break;
             case "Update":
                 // Update game state
                 var gameUpdate = message.body;
-                console.warn("New update message: ", gameUpdate);
+                console.log("New update message: ", gameUpdate);
                 break;
             case "Start":
                 // Do count down
@@ -122,8 +122,11 @@ class GameController {
     }
 
     sendMovementUpdate(direction) {
-        var messageBody = { direction : direction };
-        this.socketController.send("Update",JSON.stringify(messageBody));
+        this.socketController.send("Update", JSON.stringify(direction));
+    }
+
+    sendGameStart() {
+        this.socketController.send("Start", null);
     }
 
     sendSettingUpdate() {

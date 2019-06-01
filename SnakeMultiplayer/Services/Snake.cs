@@ -15,11 +15,16 @@ namespace SnakeMultiplayer.Services
         public readonly PlayerColor color;
         public bool isActive { get; private set; }
 
-        public Snake(Coordinate initialPosition, PlayerColor color)
+        public Snake(PlayerColor color)
         {
             this.color = color;
             this.body = new LinkedList<Coordinate>();
-            body.AddFirst(initialPosition);
+        }
+
+        public void setInitialPosition(Coordinate coordinate)
+        {
+            body.Clear();
+            body.AddFirst(coordinate);
         }
 
         public void Move(MoveDirection direction, bool isFood)

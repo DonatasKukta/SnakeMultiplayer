@@ -9,6 +9,7 @@ using JsonLibrary;
 using Microsoft.AspNetCore.Mvc;
 using JsonLibrary;
 using System.Diagnostics;
+using System.Collections;
 
 namespace SnakeMultiplayer.Services
 {
@@ -23,6 +24,7 @@ namespace SnakeMultiplayer.Services
         private readonly DateTime creationTime;
         private readonly GameServerService gameServer;
         private Arena arena;
+        private System.Timers.Timer timer;
 
         public LobbyService(string id, string host, int maxPlayers, [FromServices] GameServerService gameServer)
         {
@@ -43,7 +45,7 @@ namespace SnakeMultiplayer.Services
                 return $"Player {playerName} already exists in lobby";
             else
             {
-                if (players.TryAdd(playerName, new Snake(null, getValidPlayerColor())))
+                if (players.TryAdd(playerName, new Snake(getValidPlayerColor())))
                 {
                     // Update lobby status to all lobby players.
                     //Message playersStatus = CreatePlayerStatusMessage();
@@ -55,10 +57,37 @@ namespace SnakeMultiplayer.Services
             }
         }
 
-        private void InitializeGame()
+        private void EndGame()
+        {
+            State = LobbyStates.Idle;
+            timer.Stop();
+        }
+
+        private string InitializeGame()
         {
             // Create snakes with positions and colors
+            State = LobbyStates.inGame;
+            string error = arena.PrepareForNewGame();
+            if (!error.Equals(string.Empty))
+                return error;
 
+            //initialize timer
+            timer = new System.Timers.Timer(1000);
+            timer.Interval = 2000; // 1 second
+            timer.Elapsed += new System.Timers.ElapsedEventHandler(OnTimedUpdate);
+            timer.AutoReset = true;
+            timer.Start();
+            return string.Empty;
+        }
+
+        private async void OnTimedUpdate(object source, System.Timers.ElapsedEventArgs e)
+        {
+            // update new status
+
+            // generate new arena status
+
+            // send lobby message
+            SendLobbyMessage(new Message("server", this.ID, "Update", "on timed event message"));
         }
 
         public async void sendCloseLobbyMessage(string reason)
@@ -116,9 +145,12 @@ namespace SnakeMultiplayer.Services
                             this.arena.SetSettings(settings);
                         }
                         break;
-                    case "Update":
-                        SendLobbyMessage(new Message("server", this.ID, "Update",
-                            new { messageUpdate = "Zinute gauta. Veiksmas ale uzfiksuotas" }));
+                    case "Update": // updating only while in game
+                        if (!State.Equals(LobbyStates.inGame))
+                            break;
+
+                        var direction = (MoveDirection) message.body;
+                        SetNewPendingAction(message.sender, direction);
                         break;
                     default: //echo
                         Debug.WriteLine($"---Unexpected message from {message.sender}, content: {message.body.ToString()}");
@@ -129,6 +161,11 @@ namespace SnakeMultiplayer.Services
             {
 
             }
+        }
+
+        private void SetNewPendingAction(string player, MoveDirection direction)
+        {
+            arena.setPendingAction(player, direction);
         }
 
         private async void SendLobbyMessage(Message message)
@@ -194,14 +231,6 @@ namespace SnakeMultiplayer.Services
         dodgerblue,
         orange,
         mediumpurple,
-    }
-
-    public enum InitialPosition
-    {
-        UpLeft,
-        UpRight, 
-        DownLeft, 
-        DownRight,
     }
 
     public enum LobbyStates

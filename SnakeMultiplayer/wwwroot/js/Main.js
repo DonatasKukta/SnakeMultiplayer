@@ -12,7 +12,7 @@
     }
 
     if (document.getElementById("startButton") !== null) {
-    document.getElementById("startButton").onclick = onStartGameButtonClick;
+    document.getElementById("startButton").onclick = onStartGameButtonClick.bind(this);
     }
 
 
@@ -54,7 +54,7 @@
     }
 
     function onUpdateSettings() {
-        this.gameController.sendSettingUpdate();
+        gameController.sendSettingUpdate();
     }
 
     function onLobbyExit() {
@@ -63,7 +63,7 @@
 
     function onStartGameButtonClick(e) {
         //console.warn("Iskviestas pradėjimo mygtukas");
-        this.gameController.sendUpdate();
+        gameController.sendGameStart();
     }
 
     function onCountDownEvent(e) {
@@ -97,7 +97,7 @@
         console.log("HTML Received update players: ", players);
 
         if (!Array.isArray(players)) {
-            console.error("Not error received at update table: ", players);
+            console.error("Not array error received at update table: ", players);
         }
 
         var playerCardList = document.getElementById("playerCards");
@@ -117,9 +117,9 @@
             //playerCard.innerHTML = "<h5 class=\"card-header\"> " + player.name + "</h5> <div class=\"card-body\"><p class=\"card-text\">" + player.type + "</p></div>";
             var hostString = (player.type === "Host") ? " [host]" : "";
             playerCard.innerHTML = "<h5 class=\"card-header\"> " + player.name + hostString + "</h5>";
-            console.log("Kortele:", playerCard);
+            //console.log("Kortele:", playerCard);
             playerCardList.appendChild(playerCard);
-            console.log("Naujas sarasas: ", playerCardList);
+            //console.log("Naujas sarasas: ", playerCardList);
         });
     }
 

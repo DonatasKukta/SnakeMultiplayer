@@ -32,16 +32,72 @@ namespace SnakeMultiplayer.Services
             this.isWall = settings.isWall;
         }
 
-        private void PrepareForNewGame()
+        public void setPendingAction(string player, MoveDirection direction)
+        {
+            if (pendingActions.TryGetValue(player, out MoveDirection currDirection))
+                pendingActions.TryUpdate(player, direction, currDirection);
+        }
+
+        public Coordinate getCoordinte(InitialPosition pos)
+        {
+            if (pos.Equals(InitialPosition.UpLeft))
+            {
+                return new Coordinate(1,1);
+            }
+            else if (pos.Equals(InitialPosition.UpRight))
+            {
+                return new Coordinate(width - 1, 1);
+            }
+            else if (pos.Equals(InitialPosition.DownLeft))
+            {
+                return new Coordinate(1, height - 1);
+            }
+            else if (pos.Equals(InitialPosition.DownRight))
+            {
+                return new Coordinate(width - 1, height - 1);
+            }
+            else
+            {
+                throw new ArgumentException($" Invalid initial position {pos.ToString()}");
+            }
+        }
+
+        public string PrepareForNewGame()
         {
             // create new board of cells
             this.board = new Cells[width, height];
-            // set initial positions for snakes 
-
-            // set snakes next pending positions
-
+            // set initial positions for snakes and next pending positions
+            if (!SetInitialPositionsAndActions())
+                return "Could not set initial positions";
             // raise status update
+
+            return string.Empty;
         }
+
+        private bool SetInitialPositionsAndActions()
+        {
+            // Delete all pending actions
+            pendingActions.Clear();
+            var allPositions = Enum.GetValues(typeof(InitialPosition)).Cast<InitialPosition>().ToArray();
+            var allPlayers = snakes.Keys.ToArray();
+            string player;
+            InitialPosition initPos;
+            Coordinate initCoord;
+
+            for (int i = 0; i < allPlayers.Length; i++)
+            {
+                player = allPlayers[i];
+                initPos = allPositions[i];
+                initCoord = getCoordinte(initPos);
+                if (!snakes.ContainsKey(player))
+                    return false;
+                snakes[player].setInitialPosition(initCoord);
+
+                pendingActions.TryAdd(player, GetMoveDirection(initPos));
+            }
+            return true;
+        }
+
 
         /// <summary>
         /// Sets current pending actions to snakes
@@ -97,6 +153,39 @@ namespace SnakeMultiplayer.Services
            // Snake snake = (Snake)source;
             Console.WriteLine("Snake moved!");
         }
+
+        public static MoveDirection GetMoveDirection(InitialPosition pos)
+        {
+            if (pos.Equals(InitialPosition.UpLeft))
+            {
+                return MoveDirection.Down;
+            }
+            else if (pos.Equals(InitialPosition.UpRight))
+            {
+                return MoveDirection.Left;
+            }
+            else if (pos.Equals(InitialPosition.DownLeft))
+            {
+                return MoveDirection.Right;
+            }
+            else if (pos.Equals(InitialPosition.DownRight))
+            {
+                return MoveDirection.Up;
+            }
+            else
+            {
+                // log error
+                return MoveDirection.None;
+            }
+        }
+    }
+
+    public enum InitialPosition
+    {
+        UpLeft,
+        UpRight,
+        DownLeft,
+        DownRight,
     }
 
     public enum Cells
