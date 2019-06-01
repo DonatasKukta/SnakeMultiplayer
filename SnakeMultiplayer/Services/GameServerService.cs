@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using JsonLibrary;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace SnakeMultiplayer.Services
 {
@@ -53,7 +54,7 @@ namespace SnakeMultiplayer.Services
             }
         }
 
-        public void SendLobbyMessage(string lobby, Message message)
+        public async void SendLobbyMessage(string lobby, Message message)
         {
             if (!lobbies.TryGetValue(lobby, out Lobby currLobby))
                 return;
@@ -66,12 +67,14 @@ namespace SnakeMultiplayer.Services
 
         public async Task HandleWebSocketAsync(WebSocket webSocket)
         {
+            string lobby = string.Empty;
+            string playerName = string.Empty;
             var closeStatus = WebSocketCloseStatus.Empty;
             try
             {
                 Message message = await ReceiveMessageAsync(webSocket);
-                string lobby = message.lobby;
-                string playerName = message.sender;
+                lobby = message.lobby;
+                playerName = message.sender;
                 string errorMessage = AddPlayerToLobby(lobby, playerName, webSocket);
                 if (!errorMessage.Equals(string.Empty))
                     throw new OperationCanceledException("errorMessage");
@@ -84,6 +87,12 @@ namespace SnakeMultiplayer.Services
                     //message = await ReceiveMessageAsync(webSocket);
                     byte[] buffer = new byte[bufferSize];
                     WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    if (result.CloseStatus.HasValue)
+                    {
+                        // log 
+                        Debug.WriteLine($"Žaidėjas {playerName} nutruakė ryšį");
+                        break;
+                    }
                     string receivedMessage = Strings.getString(buffer);
                     dynamic msgObj = Strings.getObject(receivedMessage);
                     Message msg = new Message((string)msgObj.sender, (string)msgObj.lobby, (string) msgObj.type, msgObj.body);
@@ -102,10 +111,11 @@ namespace SnakeMultiplayer.Services
             }
             finally
             {
-                // remove player from this.lobbies
-                // remove player from gameserverservice.lobbies
+                // remove player from this.lobbies and lobby.players
+                this.lobbies[lobby].RemovePlayer(playerName);
                 // close socket
-                CloseSocketAsync(webSocket, closeStatus);
+                if(webSocket.State != WebSocketState.Closed)
+                    CloseSocketAsync(webSocket, closeStatus);
             }
         }
 
@@ -164,6 +174,19 @@ namespace SnakeMultiplayer.Services
             }
         }
 
+        public void removeLobby(string lobby)
+        {
+            if (lobby == null)
+                throw new ArgumentNullException("Tried to remove null lobby from lobby dictionary");
+
+            if (lobbies.ContainsKey(lobby))
+            {
+                lobbies[lobby].LobbyService.sendCloseLobbyMessage("Host has left the lobby.\n Please create new or join another lobby.");
+            }
+
+            lobbies.TryRemove(lobby, out Lobby value);
+        }
+
         // Implement locks on modification methods?
         private class Lobby
         {
@@ -211,12 +234,13 @@ namespace SnakeMultiplayer.Services
                 return players.ContainsKey(playerName);
             }
 
-            public bool RemovePlayer(string player)
+            public void RemovePlayer(string player)
             {
                 if (player == null)
                     throw new ArgumentNullException("Attempt to remove player with null string.");
-
-                return players.TryRemove(player, out WebSocket @null);
+                this.LobbyService.RemovePlayer(player);
+                players.TryRemove(player, out WebSocket @null);
+                this.LobbyService.SendPLayerStatusMessage();
             }
 
             public bool IsFull()
