@@ -60,6 +60,10 @@ namespace SnakeMultiplayer.Services
 
         }
 
+        public async void sendCloseLobbyMessage(string reason)
+        {
+            SendLobbyMessage(new Message("server", this.ID, "Exit", new { message = reason}));
+        }
         public void SendPLayerStatusMessage()
         {
             Message playersStatus = CreatePlayerStatusMessage();
@@ -130,6 +134,10 @@ namespace SnakeMultiplayer.Services
 
         public bool RemovePlayer(string playerName)
         {
+            // If host player is being removed, disband whole party.
+            if (playerName == this.hostPlayer)
+                this.gameServer.removeLobby(this.ID);
+
             return players.TryRemove(playerName, out Snake value);
         }
 
