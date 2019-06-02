@@ -8,21 +8,83 @@ using JsonLibrary;
 namespace SnakeMultiplayer.Services
 {
     /// <summary>
-    /// Lobby object represents an environment of a single game instance
+    /// Lobby object represents an environment of a single game arena instance
     /// </summary>
     public class Arena
     {
         protected Cells[,] board;
         protected ConcurrentDictionary<string, Snake> snakes;
         protected ConcurrentDictionary<string, MoveDirection> pendingActions;
+        protected ConcurrentDictionary<string, MoveDirection> lastActions;
         protected int width;
         protected int height;
         protected bool isWall;
+        protected Coordinate food;
+        protected Random rnd = new Random(Guid.NewGuid().GetHashCode());
         
         public Arena(ConcurrentDictionary<string, Snake> players)
         {
             snakes = players;
             pendingActions = new ConcurrentDictionary<string, MoveDirection>();
+            food = null;
+        }
+        /*
+        public dynamic generateReport()
+        {
+            dynamic report = new System.Dynamic.ExpandoObject();
+            report.food = this.food == null ? null : new XY(this.food.x, this.food.y);
+            report.players = new List<>
+            foreach(var snake in snakes)
+            {
+
+            }
+
+            return null;
+        }*/
+
+            
+        public ArenaStatus GenerateReport()
+        {
+            var report = new ArenaStatus(this.food == null? null: new XY(this.food.x, this.food.y));
+            foreach(var snake in snakes)
+            {
+                var tempSnake = new JsonLibrary.Snake(snake.Key);
+                foreach(var coord in snake.Value.getCoordinates())
+                {
+                    tempSnake.AddCoord(new XY(coord.x, coord.y));
+                }
+                report.AddSnake(tempSnake);
+            }
+            return report;
+        }
+
+        // Inefficient. Maybe use it in corporation with cell array: take empty cells
+        // Randomly generates food at new location
+        public void GenerateFood()
+        {
+            var newFood = new Coordinate(rnd.Next(0, width), rnd.Next(0, height));
+            var isFoodSet = false;
+            bool contains;
+
+            while (!isFoodSet)
+            {
+                newFood = new Coordinate(rnd.Next(0, width), rnd.Next(0, height));
+                contains = false;
+                foreach (var snake in snakes.Values)
+                {
+                    if (snake.Contains(newFood))
+                    {
+                        contains = true;
+                        break;
+                    }
+                }
+                if (!contains)
+                {
+                    this.food = newFood;
+                    board[newFood.x, newFood.y] = Cells.food;
+                    return;
+                }
+            }
         }
 
         public void SetSettings(Settings settings)
@@ -32,13 +94,7 @@ namespace SnakeMultiplayer.Services
             this.isWall = settings.isWall;
         }
 
-        public void setPendingAction(string player, MoveDirection direction)
-        {
-            if (pendingActions.TryGetValue(player, out MoveDirection currDirection))
-                pendingActions.TryUpdate(player, direction, currDirection);
-        }
-
-        public Coordinate getCoordinte(InitialPosition pos)
+        public Coordinate getInitalCoordinte(InitialPosition pos)
         {
             if (pos.Equals(InitialPosition.UpLeft))
             {
@@ -76,6 +132,7 @@ namespace SnakeMultiplayer.Services
 
         private bool SetInitialPositionsAndActions()
         {
+
             // Delete all pending actions
             pendingActions.Clear();
             var allPositions = Enum.GetValues(typeof(InitialPosition)).Cast<InitialPosition>().ToArray();
@@ -88,23 +145,78 @@ namespace SnakeMultiplayer.Services
             {
                 player = allPlayers[i];
                 initPos = allPositions[i];
-                initCoord = getCoordinte(initPos);
+                initCoord = getInitalCoordinte(initPos);
                 if (!snakes.ContainsKey(player))
                     return false;
                 snakes[player].setInitialPosition(initCoord);
 
                 pendingActions.TryAdd(player, GetMoveDirection(initPos));
             }
+            // creates shallow copy! each lasAction.Value references relevant pendingActions.Value
+            lastActions = new ConcurrentDictionary<string, MoveDirection>(pendingActions);
             return true;
         }
+        
+        public void updateActions()
+        {
+            CheckPendingActions();
+            //Check if food is found, other snake or empty cell.
 
+            foreach(var snake  in snakes)
+            {
+                var currAction = pendingActions[snake.Key];
+                var newHead = snake.Value.Head();
+                newHead.Update(currAction);
+                Tuple<Coordinate, Coordinate> moveResult = null;
+
+                if ( ( newHead.x < 0  || width <= newHead.x )|| (newHead.y < 0 || width <= newHead.y)) // is wall???
+                {
+                    snake.Value.Deactivate();
+                }
+
+                if (board[newHead.x, newHead.y].Equals(Cells.empty)){
+                    moveResult = snake.Value.Move(currAction, false);
+                } else if (board[newHead.x, newHead.y].Equals(Cells.food))
+                {
+                    moveResult = snake.Value.Move(currAction, true);
+                } else //if (board[newHead.x, newHead.y].Equals(Cells.snake))
+                {
+                    snake.Value.Deactivate();
+                }
+                if (moveResult == null)
+                    return;
+
+                board[moveResult.Item1.x, moveResult.Item1.y] = Cells.snake;
+                if(moveResult.Item2 != null)
+                    board[moveResult.Item1.x, moveResult.Item1.y] = Cells.empty;
+            }
+        }
+        /// <summary>
+        ///  Error free
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="direction"></param>
+        public void SetPendingAction(string player, MoveDirection direction)
+        {
+            if (pendingActions.TryGetValue(player, out MoveDirection currDirection))
+                pendingActions.TryUpdate(player, direction, currDirection);
+        }
 
         /// <summary>
         /// Sets current pending actions to snakes
         /// </summary>
-        private void SetPendingActions()
+        private void CheckPendingActions()
         {
-
+            foreach(var snake in snakes)
+            {
+                // check if action is valid (get head and update and check
+                var currentPendingAction = pendingActions[snake.Key];
+                // if current action is not valid, set to last action. The very first action is alawyas valid.
+                if (snake.Value.IsDirectionNotToSelf(currentPendingAction))
+                    currentPendingAction = lastActions[snake.Key];
+            }
+            // save current actions
+            lastActions = new ConcurrentDictionary<string, MoveDirection>(pendingActions);
         }
 
         private void ClearPendingActions()
@@ -117,21 +229,8 @@ namespace SnakeMultiplayer.Services
         /// </summary>
         /// <param name="playerName"></param>
         /// <param name="direction"></param>
-        public void updatePendingAction(string playerName, MoveDirection direction)
-        {
-            pendingActions[playerName] = direction;
-        }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        private void resetPendingActions()
-        {
-            foreach(var action in pendingActions)
-            {
-                pendingActions[action.Key] = MoveDirection.None;
-            }
-        }
+        
 
         public bool AddSnake(string playerName, Coordinate initCord)
         {
