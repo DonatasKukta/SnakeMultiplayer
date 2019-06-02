@@ -66,7 +66,7 @@ namespace SnakeMultiplayer.Services
 
             var head = Head();
             head.Update(direction);
-            return this.body.First.Next.Value.Equals(head);
+            return !this.body.First.Next.Value.Equals(head);
 
         }
 
