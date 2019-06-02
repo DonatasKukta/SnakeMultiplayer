@@ -37,7 +37,7 @@ namespace SnakeMultiplayer.Services
                     continue;
                     
                 var head = snake.Value.Head().ConvertToXY();
-                var tail = snake.Value.tail.ConvertToXY();
+                var tail = snake.Value.tail == null? null : snake.Value.tail.ConvertToXY();
                 var color = snake.Value.GetColorString();
                 var tempSnake = new JsonLibrary.Snake(snake.Key, color, head, tail);
                 report.AddSnake(tempSnake);
@@ -45,26 +45,17 @@ namespace SnakeMultiplayer.Services
             return report;
         }
 
-        /*
-        public ArenaStatus GenerateReport()
-        {
-            var report = new ArenaStatus(this.food == null? null: new XY(this.food.x, this.food.y));
-            foreach(var snake in snakes)
-            {
-                var tempSnake = new JsonLibrary.Snake(snake.Key);
-                foreach(var coord in snake.Value.getCoordinates())
-                {
-                    tempSnake.AddCoord(new XY(coord.x, coord.y));
-                }
-                report.AddSnake(tempSnake);
-            }
-            return report;
-        }*/
-
         // Inefficient. Maybe use it in corporation with cell array: take empty cells
         // Randomly generates food at new location
-        public void GenerateFood()
+        /// <summary>
+        /// If needed, generates food at random location,saves food location to board.
+        /// </summary>
+        /// <param name="force">If true, generates food even if its nulll</param>
+        public void GenerateFood(bool force)
         {
+            if (force || food != null)
+                return;
+
             var newFood = new Coordinate(rnd.Next(0, width), rnd.Next(0, height));
             var isFoodSet = false;
             bool contains;
@@ -128,7 +119,8 @@ namespace SnakeMultiplayer.Services
             // set initial positions for snakes and next pending positions
             if (!SetInitialPositionsAndActions())
                 return "Could not set initial positions";
-            // raise status update
+            // set food
+            GenerateFood(true);
 
             return string.Empty;
         }
@@ -185,6 +177,7 @@ namespace SnakeMultiplayer.Services
                     moveResult = snake.Value.Move(currAction, false);
                 } else if (board[newHead.x, newHead.y].Equals(Cells.food))
                 {
+                    food = null;
                     moveResult = snake.Value.Move(currAction, true);
                 } else //if (board[newHead.x, newHead.y].Equals(Cells.snake))
                 {
@@ -198,6 +191,7 @@ namespace SnakeMultiplayer.Services
                 if(moveResult.Item2 != null)
                     board[moveResult.Item1.x, moveResult.Item1.y] = Cells.empty;
             }
+            GenerateFood(false);
         }
         /// <summary>
         ///  Error free
@@ -220,8 +214,8 @@ namespace SnakeMultiplayer.Services
                 // check if action is valid (get head and update and check
                 var currentPendingAction = pendingActions[snake.Key];
                 // if current action is not valid, set to last action. The very first action is alawyas valid.
-                if (snake.Value.IsDirectionNotToSelf(currentPendingAction))
-                    currentPendingAction = lastActions[snake.Key];
+                if (!snake.Value.IsDirectionNotToSelf(currentPendingAction))
+                    pendingActions[snake.Key] = lastActions[snake.Key];
             }
             // save current actions
             lastActions = new ConcurrentDictionary<string, MoveDirection>(pendingActions);
@@ -230,35 +224,6 @@ namespace SnakeMultiplayer.Services
         private void ClearPendingActions()
         {
             // Set last action to be next action
-        }
-
-        /// <summary>
-        /// Updates pending direction
-        /// </summary>
-        /// <param name="playerName"></param>
-        /// <param name="direction"></param>
-
-        
-
-        public bool AddSnake(string playerName, Coordinate initCord)
-        {
-            foreach(var item in snakes)
-            {
-                if (item.Key.Equals(playerName))
-                    return false;
-            }
-
-            //Snake newSnake = new Snake(initCord, "green");
-            //newSnake.SnakeMoved += OnSnakeMovemenent;
-            //snakes.Add(playerName, newSnake);
-
-            return true;
-        }
-        
-        public void OnSnakeMovemenent(Coordinate head ,Coordinate tail, bool isFood)
-        {
-           // Snake snake = (Snake)source;
-            Console.WriteLine("Snake moved!");
         }
 
         public static MoveDirection GetMoveDirection(InitialPosition pos)
