@@ -7,13 +7,20 @@ namespace SnakeMultiplayer.Services
 {
     public class Coordinate
     {
-        private int x;
-        private int y;
-        
+        public int x { get; private set; }
+        public int y { get; private set; }
+
+        public Coordinate(){}
+
         public Coordinate(int x, int y)
         {
             this.x = x;
             this.y = y;
+        }
+
+        public Coordinate Clone()
+        {
+            return new Coordinate(this.x, this.y);
         }
 
         public void Update(MoveDirection direction)
@@ -46,6 +53,21 @@ namespace SnakeMultiplayer.Services
         {
             return String.Format($"{x}:{y};");
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || !this.GetType().Equals(obj.GetType()))
+                return false;
+
+            var other = (Coordinate) obj;
+            return (x == other.x) && (y == other.y);
+        }
+
+        public override int GetHashCode()
+        {
+            return (x << 2) ^ y;
+        }
+
     }
     
     public enum MoveDirection
