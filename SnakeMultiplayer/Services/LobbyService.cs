@@ -83,11 +83,15 @@ namespace SnakeMultiplayer.Services
         private async void OnTimedUpdate(object source, System.Timers.ElapsedEventArgs e)
         {
             // update new status
-
+            arena.updateActions();
             // generate new arena status
-
+            ArenaStatus report = arena.GenerateReport();
             // send lobby message
-            SendLobbyMessage(new Message("server", this.ID, "Update", "on timed event message"));
+
+            //string temp = Strings.get
+            //dynamic temp = report;
+
+            SendLobbyMessage(new Message("server", this.ID, "Update", new { status = report }));
         }
 
         public async void sendCloseLobbyMessage(string reason)
@@ -165,7 +169,7 @@ namespace SnakeMultiplayer.Services
 
         private void SetNewPendingAction(string player, MoveDirection direction)
         {
-            arena.setPendingAction(player, direction);
+            arena.SetPendingAction(player, direction);
         }
 
         private async void SendLobbyMessage(Message message)
