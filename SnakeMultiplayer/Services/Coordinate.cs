@@ -1,4 +1,5 @@
-﻿using System;
+﻿using JsonLibrary;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,6 +22,11 @@ namespace SnakeMultiplayer.Services
         public Coordinate Clone()
         {
             return new Coordinate(this.x, this.y);
+        }
+
+        public XY ConvertToXY()
+        {
+            return new XY(x, y);
         }
 
         public void Update(MoveDirection direction)
