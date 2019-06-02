@@ -67,16 +67,19 @@ class GameController {
                 break;
             case "Update":
                 // Update game state
-                var gameUpdate = message.body;
-                console.log("New update message: ", gameUpdate);
-                this.HandleUpdate(gameUpdate.status);
+                this.HandleUpdate(message.body.status);
                 break;
             case "Start":
+                // Raise game started event
+                this.mainDispatcher.dispatch("onStartReceived");
                 // Do count down
+
+                // Initialize positions
+                this.HandleStart(message.body.Start)
                 break;
-            case "Close":
+            case "End":
                 // close web socket connection, throw error.
-                this.mainDispatcher.dispatch("onExitReceived", message.body);
+
                 break;
             case "Exit":
                 this.mainDispatcher.dispatch("onExitReceived", message.body);
@@ -84,8 +87,30 @@ class GameController {
         }
     }
 
+    HandleStart(startMessage) {
+        var food = startMessage.food;
+        if (food !== null) {
+            this.cellContainer.drawCell(food.x, food.y, "black");
+        }
+
+        var snakesArray = startMessage.snakes;
+        var i;
+        for (i = 0; i < snakesArray.length; i++) {
+            var head = snakesArray[i].head;
+            var tail = snakesArray[i].tail;
+            var player = snakesArray[i].player;
+            var color = snakesArray[i].color;
+
+            this.cellContainer.updateSnake(color, head, tail);
+        }
+    }
+
     HandleUpdate(updateMessage) {
         var food = updateMessage.food;
+        if (food !== null) {
+            this.cellContainer.drawCell(food.x, food.y, "black");
+        }
+
         var snakesArray = updateMessage.snakes;
         var i;
         for (i = 0; i < snakesArray.length; i++) {
@@ -149,20 +174,6 @@ class GameController {
         for (var i = 0; i < this.snakes.length; i++) {
             this.cellContainer.initializeSnake(this.snakes[i].getBodyArray(), this.snakes[i].color);
         }
-    }
-
-    doStubActions() {
-        var snake = new Snake("Donatas", "blue");
-        snake.setStartPoint(2, 2);
-        this.cellContainer.initializeSnake(snake.getBodyArray(), snake.color);
-
-        var newCoords = snake.update(MoveDirection.Right, true);
-        this.cellContainer.updateSnake(snake.innerColor, newCoords.head, newCoords.tail);
-        newCoords = snake.update(MoveDirection.Right, true);
-        this.cellContainer.updateSnake(snake.innerColor, newCoords.head, newCoords.tail);
-        newCoords = snake.update(MoveDirection.Right, true);
-        this.cellContainer.updateSnake(snake.innerColor, newCoords.head, newCoords.tail);
-        this.snakes.push(snake);
     }
 }
 
