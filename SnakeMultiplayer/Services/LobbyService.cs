@@ -68,16 +68,17 @@ namespace SnakeMultiplayer.Services
             // Create snakes with positions and colors
             State = LobbyStates.inGame;
             string error = arena.PrepareForNewGame();
-            if (!error.Equals(string.Empty))
-                return error;
+            return error;
+        }
 
+        private void StartTimer()
+        {
             //initialize timer
             timer = new System.Timers.Timer(1000);
-            timer.Interval = 2000; // 1 second
+            timer.Interval = 1000; // 1 second
             timer.Elapsed += new System.Timers.ElapsedEventHandler(OnTimedUpdate);
             timer.AutoReset = true;
             timer.Start();
-            return string.Empty;
         }
 
         private async void OnTimedUpdate(object source, System.Timers.ElapsedEventArgs e)
@@ -87,10 +88,6 @@ namespace SnakeMultiplayer.Services
             // generate new arena status
             ArenaStatus report = arena.GenerateReport();
             // send lobby message
-
-            //string temp = Strings.get
-            //dynamic temp = report;
-
             SendLobbyMessage(new Message("server", this.ID, "Update", new { status = report }));
         }
 
@@ -132,10 +129,13 @@ namespace SnakeMultiplayer.Services
                 switch (message.type)
                 {
                     case "Start":
-                        if (message.sender.Equals(hostPlayer))
+                        if (message.sender.Equals(hostPlayer) && State.Equals(LobbyStates.Idle))
                         {
-                        Debug.WriteLine($"Inicializuotas žaidimas {ID} lobby  ");
-                        InitializeGame();
+                            Debug.WriteLine($"Inicializuotas žaidimas {ID} lobby  ");
+                            InitializeGame();
+                            var report = arena.GenerateReport();
+                            SendLobbyMessage(new Message("server", this.ID, "Start", new {Start = report }));
+                            //StartTimer(); // disable timer for debugging
                         }
                     break;
                     case "Players":
@@ -152,9 +152,9 @@ namespace SnakeMultiplayer.Services
                     case "Update": // updating only while in game
                         if (!State.Equals(LobbyStates.inGame))
                             break;
-
                         var direction = (MoveDirection) message.body;
-                        SetNewPendingAction(message.sender, direction);
+                        arena.SetPendingAction(message.sender, direction);
+                        OnTimedUpdate(null, null); // for debuging
                         break;
                     default: //echo
                         Debug.WriteLine($"---Unexpected message from {message.sender}, content: {message.body.ToString()}");
@@ -165,11 +165,6 @@ namespace SnakeMultiplayer.Services
             {
 
             }
-        }
-
-        private void SetNewPendingAction(string player, MoveDirection direction)
-        {
-            arena.SetPendingAction(player, direction);
         }
 
         private async void SendLobbyMessage(Message message)
