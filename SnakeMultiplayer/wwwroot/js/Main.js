@@ -14,34 +14,38 @@
     if (document.getElementById("startButton") !== null) {
     document.getElementById("startButton").onclick = onStartGameButtonClick.bind(this);
     }
-
-
-
+    
     window.addEventListener('resize', reSet, false);
     var MainDispatcher = new Dispatcher();
     MainDispatcher.on("onPlayerListReceived", updatePlayers.bind(this));
     MainDispatcher.on("onExitReceived", redirectToErrorPage.bind(this));
+    MainDispatcher.on("onStartReceived", onGameStartRececeived.bind(this));
+    MainDispatcher.on("onGameEndReceived", onGameEndReceived.bind(this));
 
 
     var gameController = new GameController(PlayerName, LobbyId, MainDispatcher);
     gameController.setEnvironment();
-    gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder)); gameController.doStubActions();
-    
+    gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder)); 
+
     window.addEventListener('beforeunload', (event) => {
         gameController.socketController.close();
     });    
     document.onkeydown = function (e) {
         switch (e.key) {
             case 'ArrowUp':
+                e.preventDefault();
                 gameController.sendMovementUpdate(MoveDirection.Up);
                 break;
             case 'ArrowDown':
+                e.preventDefault();
                 gameController.sendMovementUpdate(MoveDirection.Down);
                 break;
             case 'ArrowLeft':
+                e.preventDefault();
                 gameController.sendMovementUpdate(MoveDirection.Left);
                 break;
             case 'ArrowRight':
+                e.preventDefault();
                 gameController.sendMovementUpdate(MoveDirection.Right);
                 break;
         }
@@ -53,45 +57,31 @@
         gameController.drawSnakes();       
     }
 
+    // To be implemented
     function onUpdateSettings() {
         gameController.sendSettingUpdate();
     }
-
-    function onLobbyExit() {
-
-    }
-
-    function onStartGameButtonClick(e) {
-        //console.warn("Iskviestas pradėjimo mygtukas");
-        showCanvas();
-        gameController.sendGameStart();
-    }
-
+    // To be implemented
     function onCountDownEvent(e) {
 
     }
 
+    function onStartGameButtonClick(e) {
+        gameController.sendGameStart();
+    }
+    
     function onGameStartRececeived(e) {
-
-        showCanvas();
+        var element = document.getElementById('Canvas');
+        element.style.visibility = 'visible';
+        element.scrollIntoView();
     }
 
     function onGameEndReceived(e) {
-        //re-set canvas state
-        hideCanvas();
-    }
-
-    function showCanvas() {
-        var element = document.getElementById('Canvas');
-        console.log("canvas element:", element);
-        element.style.visibility = 'visible';
-    }
-
-    function hideCanvas() {
         var element = document.getElementById('Canvas');
         console.log("canvas element:", element);
         //element.style.display = 'none'; //or
         element.style.visibility = 'hidden';
+        document.getElementById('navigation_bar').scrollIntoView();
     }
 
     function updatePlayers(players) {
