@@ -13,9 +13,10 @@ namespace SnakeMultiplayer.Services
         public delegate void SnakeMovementEventHandler(Coordinate head, Coordinate tail, bool isFood);
         public event SnakeMovementEventHandler SnakeMoved;
         public readonly PlayerColor color;
-        public bool isActive { get; private set; }
+        public bool IsActive { get; private set; }
+        public Coordinate tail  { get; private set; }
 
-        public Snake(PlayerColor color)
+    public Snake(PlayerColor color)
         {
             this.color = color;
             this.body = new LinkedList<Coordinate>();
@@ -23,13 +24,14 @@ namespace SnakeMultiplayer.Services
 
         public void setInitialPosition(Coordinate coordinate)
         {
+            this.IsActive = true;
             body.Clear();
             body.AddFirst(coordinate);
         }
-
+        
         public void Deactivate()
         {
-            isActive = false;
+            IsActive = false;
             this.body = null;
         }
         
@@ -38,17 +40,16 @@ namespace SnakeMultiplayer.Services
             if (body == null)
                 new Tuple<Coordinate, Coordinate>(null, null);
 
-            var newPosition = body.First.Value;
+            var newPosition = body.First.Value.Clone();
             newPosition.Update(direction);
             body.AddFirst(newPosition);
-            Coordinate tail = null;
+            tail = null;
+            
             if (!isFood)
             {
                 tail = body.Last.Value.Clone();
                 body.RemoveLast();
             }
-
-
             return new Tuple<Coordinate, Coordinate>(Head(), tail);
             //SnakeMoved(body.First.Value, body.Last.Value, isFood);
         }
