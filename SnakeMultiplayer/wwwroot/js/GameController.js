@@ -69,6 +69,7 @@ class GameController {
                 // Update game state
                 var gameUpdate = message.body;
                 console.log("New update message: ", gameUpdate);
+                this.HandleUpdate(gameUpdate.status);
                 break;
             case "Start":
                 // Do count down
@@ -83,9 +84,18 @@ class GameController {
         }
     }
 
-    beginStub() {
-        this.webSocketController.send("nusiusta zinute");
-        this.webSocketController.send("kita zinute");
+    HandleUpdate(updateMessage) {
+        var food = updateMessage.food;
+        var snakesArray = updateMessage.snakes;
+        var i;
+        for (i = 0; i < snakesArray.length; i++) {
+            var head = snakesArray[i].head;
+            var tail = snakesArray[i].tail;
+            var player = snakesArray[i].player;
+            var color = snakesArray[i].color;
+
+            this.cellContainer.updateSnake(color, head, tail);
+        }
     }
 
     setEnvironment() {

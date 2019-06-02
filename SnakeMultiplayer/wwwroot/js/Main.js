@@ -63,6 +63,7 @@
 
     function onStartGameButtonClick(e) {
         //console.warn("Iskviestas pradėjimo mygtukas");
+        showCanvas();
         gameController.sendGameStart();
     }
 
