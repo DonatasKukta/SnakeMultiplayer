@@ -27,21 +27,73 @@ namespace SnakeMultiplayer.Services
             body.AddFirst(coordinate);
         }
 
-        public void Move(MoveDirection direction, bool isFood)
+        public void Deactivate()
         {
+            isActive = false;
+            this.body = null;
+        }
+        
+        public Tuple<Coordinate, Coordinate> Move(MoveDirection direction, bool isFood)
+        {
+            if (body == null)
+                new Tuple<Coordinate, Coordinate>(null, null);
+
             var newPosition = body.First.Value;
             newPosition.Update(direction);
             body.AddFirst(newPosition);
-
+            Coordinate tail = null;
             if (!isFood)
+            {
+                tail = body.Last.Value.Clone();
                 body.RemoveLast();
+            }
 
-            SnakeMoved(body.First.Value, body.Last.Value, isFood);
+
+            return new Tuple<Coordinate, Coordinate>(Head(), tail);
+            //SnakeMoved(body.First.Value, body.Last.Value, isFood);
+        }
+        /// <summary>
+        /// Check whether direction is valid.
+        /// (Snake always can not move backwards).
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <returns></returns>
+        public bool IsDirectionNotToSelf(MoveDirection direction)
+        {
+            if (body == null || body.Count <= 1)
+                return true;
+
+            var head = Head();
+            head.Update(direction);
+            return this.body.First.Next.Value.Equals(head);
+
+        }
+
+        public Coordinate Head()
+        {
+            if (body == null)
+                return null;
+
+            return body.First.Value.Clone();
         }
 
         public List<Coordinate> getCoordinates()
         {
+            if (body == null)
+                return null;
+
             return body.ToList<Coordinate>();
+        }
+
+        public bool Contains(Coordinate food)
+        {
+            if (body == null)
+                return false;
+
+            foreach (var coord in body)
+                if (coord.Equals(food))
+                    return true;
+            return false;
         }
 
         public List<string> ToStringBody()
