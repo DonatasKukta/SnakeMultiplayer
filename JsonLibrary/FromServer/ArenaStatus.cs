@@ -30,20 +30,20 @@ namespace JsonLibrary
             return JsonConvert.SerializeObject(m);
         }
     }
+
     [JsonObject]
     public class Snake
     {
-        public List<XY> body;
         public string player;
-        public Snake(string player)
+        public string color;
+        public XY head;
+        public XY tail;
+        public Snake(string player, string color, XY head, XY tail)
         {
             this.player = player;
-            body = new List<XY>();
-        }
-
-        public void AddCoord(XY c)
-        {
-            body.Add(c);
+            this.color = color;
+            this.head = head;
+            this.tail = tail;
         }
     }
     [JsonObject]
