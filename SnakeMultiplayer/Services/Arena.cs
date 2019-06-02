@@ -28,21 +28,24 @@ namespace SnakeMultiplayer.Services
             pendingActions = new ConcurrentDictionary<string, MoveDirection>();
             food = null;
         }
-        /*
-        public dynamic generateReport()
+        public ArenaStatus GenerateReport()
         {
-            dynamic report = new System.Dynamic.ExpandoObject();
-            report.food = this.food == null ? null : new XY(this.food.x, this.food.y);
-            report.players = new List<>
-            foreach(var snake in snakes)
+            var report = new ArenaStatus(this.food == null ? null : new XY(this.food.x, this.food.y));
+            foreach (var snake in snakes)
             {
-
+                if (snake.Value == null || !snake.Value.IsActive)
+                    continue;
+                    
+                var head = snake.Value.Head().ConvertToXY();
+                var tail = snake.Value.tail.ConvertToXY();
+                var color = snake.Value.GetColorString();
+                var tempSnake = new JsonLibrary.Snake(snake.Key, color, head, tail);
+                report.AddSnake(tempSnake);
             }
+            return report;
+        }
 
-            return null;
-        }*/
-
-            
+        /*
         public ArenaStatus GenerateReport()
         {
             var report = new ArenaStatus(this.food == null? null: new XY(this.food.x, this.food.y));
@@ -56,7 +59,7 @@ namespace SnakeMultiplayer.Services
                 report.AddSnake(tempSnake);
             }
             return report;
-        }
+        }*/
 
         // Inefficient. Maybe use it in corporation with cell array: take empty cells
         // Randomly generates food at new location
@@ -164,6 +167,9 @@ namespace SnakeMultiplayer.Services
 
             foreach(var snake  in snakes)
             {
+                if (!snake.Value.IsActive)
+                    break;
+
                 var currAction = pendingActions[snake.Key];
                 var newHead = snake.Value.Head();
                 newHead.Update(currAction);
@@ -172,6 +178,7 @@ namespace SnakeMultiplayer.Services
                 if ( ( newHead.x < 0  || width <= newHead.x )|| (newHead.y < 0 || width <= newHead.y)) // is wall???
                 {
                     snake.Value.Deactivate();
+                    break;
                 }
 
                 if (board[newHead.x, newHead.y].Equals(Cells.empty)){
@@ -182,9 +189,10 @@ namespace SnakeMultiplayer.Services
                 } else //if (board[newHead.x, newHead.y].Equals(Cells.snake))
                 {
                     snake.Value.Deactivate();
+                    break;
                 }
                 if (moveResult == null)
-                    return;
+                    break;
 
                 board[moveResult.Item1.x, moveResult.Item1.y] = Cells.snake;
                 if(moveResult.Item2 != null)
