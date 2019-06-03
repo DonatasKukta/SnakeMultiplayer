@@ -33,14 +33,22 @@ namespace SnakeMultiplayer.Services
             var report = new ArenaStatus(this.food == null ? null : new XY(this.food.x, this.food.y));
             foreach (var snake in snakes)
             {
-                if (snake.Value == null || !snake.Value.IsActive)
+                if (snake.Value == null)
+                {
                     continue;
-                    
-                var head = snake.Value.Head().ConvertToXY();
-                var tail = snake.Value.tail == null? null : snake.Value.tail.ConvertToXY();
-                var color = snake.Value.GetColorString();
-                var tempSnake = new JsonLibrary.Snake(snake.Key, color, head, tail);
-                report.AddSnake(tempSnake);
+                }
+                else if (!snake.Value.IsActive)
+                {
+                    report.AddDisabledSnake(snake.Key);
+                }
+                else
+                {
+                    var head = snake.Value.Head().ConvertToXY();
+                    var tail = snake.Value.tail == null ? null : snake.Value.tail.ConvertToXY();
+                    var color = snake.Value.GetColorString();
+                    var tempSnake = new JsonLibrary.Snake(snake.Key, color, head, tail);
+                    report.AddActiveSnake(tempSnake);
+                }
             }
             return report;
         }
@@ -83,6 +91,7 @@ namespace SnakeMultiplayer.Services
 
         public void SetSettings(Settings settings)
         {
+            //  ConsiderSpeedSetting
             this.width = settings.cellCount;
             this.height = settings.cellCount;
             this.isWall = settings.isWall;
@@ -152,17 +161,21 @@ namespace SnakeMultiplayer.Services
             return true;
         }
         
-        public void updateActions()
+        public void UpdateActions()
         {
             CheckPendingActions();
-            //Check if food is found, other snake or empty cell.
 
             foreach(var snake  in snakes)
             {
-                if (!snake.Value.IsActive)
+                if (snake.Value == null || !snake.Value.IsActive)
+                {
                     break;
+                }
 
-                var currAction = pendingActions[snake.Key];
+                if(!pendingActions.TryGetValue(snake.Key, out MoveDirection currAction ))
+                    break;
+                 
+                //var currAction = pendingActions[snake.Key];
                 var newHead = snake.Value.Head();
                 newHead.Update(currAction);
                 Tuple<Coordinate, Coordinate> moveResult = null;
@@ -175,11 +188,13 @@ namespace SnakeMultiplayer.Services
 
                 if (board[newHead.x, newHead.y].Equals(Cells.empty)){
                     moveResult = snake.Value.Move(currAction, false);
-                } else if (board[newHead.x, newHead.y].Equals(Cells.food))
+                }
+                else if (board[newHead.x, newHead.y].Equals(Cells.food))
                 {
                     food = null;
                     moveResult = snake.Value.Move(currAction, true);
-                } else //if (board[newHead.x, newHead.y].Equals(Cells.snake))
+                }
+                else //if (board[newHead.x, newHead.y].Equals(Cells.snake))
                 {
                     snake.Value.Deactivate();
                     break;
@@ -189,7 +204,9 @@ namespace SnakeMultiplayer.Services
 
                 board[moveResult.Item1.x, moveResult.Item1.y] = Cells.snake;
                 if(moveResult.Item2 != null)
-                    board[moveResult.Item1.x, moveResult.Item1.y] = Cells.empty;
+                {   // snake tail must be removed
+                    board[moveResult.Item2.x, moveResult.Item2.y] = Cells.empty;
+                }
             }
             GenerateFood(false);
         }

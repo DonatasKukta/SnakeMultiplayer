@@ -8,17 +8,24 @@ namespace JsonLibrary
     [JsonObject]
     public class ArenaStatus
     {
-        public List<Snake> snakes;
+        public List<Snake> ActiveSnakes;
+        public List<string> DisabledSnakes;
         public XY food;
 
         public ArenaStatus(XY food)
         {
             this.food = food;
-            snakes = new List<Snake>();
+            ActiveSnakes = new List<Snake>();
+            DisabledSnakes =  new List<string>();
         }
-        public void  AddSnake(Snake s)
+        public void  AddActiveSnake(Snake s)
         {
-            snakes.Add(s);
+            ActiveSnakes.Add(s);
+        }
+
+        public void AddDisabledSnake(string player)
+        {
+            DisabledSnakes.Add(player);
         }
 
         public static Players Deserialize(string json)
