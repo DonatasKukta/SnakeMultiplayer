@@ -9,7 +9,7 @@
         this.currDirection = MoveDirection.Down;
         this.body.addFirst(new Cell(baseCell.size, this.color, baseCell.outlineColor, x, y));
     }
-
+    
     // Always returns added head coordinates AND deleted tail coordinates.
     update(direction, isFood) {
         var newHead = this.body.getFirst().getCopy();
@@ -53,6 +53,7 @@ class GameController {
         console.log("Socket opened");
         this.sendPlayerListRequest();
         this.sendSettingUpdate();
+        this.mainDispatcher.dispatch("onWebSocketOpened");
     }
 
     onMessageReceived(message) {
@@ -75,7 +76,7 @@ class GameController {
                 // Do count down
 
                 // Initialize positions
-                this.HandleStart(message.body.Start)
+                this.HandleStart(message.body.Start);
                 break;
             case "End":
                 // close web socket connection, throw error.
@@ -93,7 +94,7 @@ class GameController {
             this.cellContainer.drawCell(food.x, food.y, "black");
         }
 
-        var snakesArray = startMessage.snakes;
+        var snakesArray = startMessage.ActiveSnakes;
         var i;
         for (i = 0; i < snakesArray.length; i++) {
             var head = snakesArray[i].head;
@@ -101,8 +102,12 @@ class GameController {
             var player = snakesArray[i].player;
             var color = snakesArray[i].color;
 
-            this.cellContainer.updateSnake(color, head, tail);
+            //this.cellContainer.updateSnake(color, head, tail);
+            var snake = new Snake(player, color);
+            snake.setStartPoint(head.x, head.y);
+            this.snakes.push(snake);
         }
+        this.drawSnakes();
     }
 
     HandleUpdate(updateMessage) {
@@ -110,8 +115,8 @@ class GameController {
         if (food !== null) {
             this.cellContainer.drawCell(food.x, food.y, "black");
         }
-
-        var snakesArray = updateMessage.snakes;
+        // Update active snakes
+        var snakesArray = updateMessage.ActiveSnakes;
         var i;
         for (i = 0; i < snakesArray.length; i++) {
             var head = snakesArray[i].head;
@@ -120,6 +125,11 @@ class GameController {
             var color = snakesArray[i].color;
 
             this.cellContainer.updateSnake(color, head, tail);
+        }
+        // Disable inactive snakes
+        var snakesArray = updateMessage.DisabledSnakes;
+        for (i = 0; i < snakesArray.length; i++) {
+
         }
     }
 
