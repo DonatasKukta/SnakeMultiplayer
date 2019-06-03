@@ -75,7 +75,7 @@ namespace SnakeMultiplayer.Services
         {
             //initialize timer
             timer = new System.Timers.Timer(1000);
-            timer.Interval = 1000; // 1 second
+            timer.Interval = 500; // 1 second
             timer.Elapsed += new System.Timers.ElapsedEventHandler(OnTimedUpdate);
             timer.AutoReset = true;
             timer.Start();
@@ -83,12 +83,41 @@ namespace SnakeMultiplayer.Services
 
         private async void OnTimedUpdate(object source, System.Timers.ElapsedEventArgs e)
         {
+            // Chech if game has ended
+            if (IsGameEnd())
+            {
+                SendLobbyMessage(new Message("server", this.ID, "End", null));
+                this.timer.Stop();
+                this.timer.Dispose();
+            }
             // update new status
-            arena.updateActions();
+            arena.UpdateActions();
             // generate new arena status
             ArenaStatus report = arena.GenerateReport();
             // send lobby message
             SendLobbyMessage(new Message("server", this.ID, "Update", new { status = report }));
+        }
+
+        private bool IsGameEnd()
+        {
+            var playerCount = this.players.Count();
+            // If multiple player, stop when one player is left active.
+            if( 1 < playerCount )
+            {
+                return players.Values.Select(p => p.IsActive == true).Count() > 1 ? false : true;
+            }
+            // if solo player, end only if snake is deactivated.
+            else if ( playerCount == 1 )
+            {
+                return players.Values.Select(p => p.IsActive == true).Count() > 0 ? false : true;
+            }   
+            // if no players, destroy lobby.
+            else 
+            {
+                return true;
+                gameServer.removeLobby(this.ID);
+            }
+            
         }
 
         public async void sendCloseLobbyMessage(string reason)
