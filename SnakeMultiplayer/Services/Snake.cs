@@ -72,7 +72,7 @@ namespace SnakeMultiplayer.Services
 
         public Coordinate Head()
         {
-            if (body == null)
+            if (body == null || body.First.Value == null)
                 return null;
 
             return body.First.Value.Clone();
