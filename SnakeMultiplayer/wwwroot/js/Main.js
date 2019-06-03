@@ -21,7 +21,10 @@
     MainDispatcher.on("onExitReceived", redirectToErrorPage.bind(this));
     MainDispatcher.on("onStartReceived", onGameStartRececeived.bind(this));
     MainDispatcher.on("onGameEndReceived", onGameEndReceived.bind(this));
+    MainDispatcher.on("onWebSocketOpened", EnableStartButton.bind(this));
+    MainDispatcher.on("onWebSocketClosed", null); // to be implemented
 
+    DisableStartButton();
 
     var gameController = new GameController(PlayerName, LobbyId, MainDispatcher);
     gameController.setEnvironment();
@@ -57,6 +60,17 @@
         gameController.drawSnakes();       
     }
 
+    function EnableStartButton() {
+        if (document.getElementById("startButton") !== null) {
+        document.getElementById("startButton").disabled = false;
+        }
+    }
+    function DisableStartButton() {
+        if (document.getElementById("startButton") !== null) {
+        document.getElementById("startButton").disabled = true;
+        }
+    }
+
     // To be implemented
     function onUpdateSettings() {
         gameController.sendSettingUpdate();
@@ -74,6 +88,7 @@
         var element = document.getElementById('Canvas');
         element.style.visibility = 'visible';
         element.scrollIntoView();
+        DisableStartButton();
     }
 
     function onGameEndReceived(e) {
@@ -82,6 +97,7 @@
         //element.style.display = 'none'; //or
         element.style.visibility = 'hidden';
         document.getElementById('navigation_bar').scrollIntoView();
+        EnableStartButton();
     }
 
     function updatePlayers(players) {
@@ -95,24 +111,16 @@
         while (playerCardList.hasChildNodes()) {
             playerCardList.removeChild(playerCardList.firstChild);
         }
-        /* Card html example
-     <div class="playerCard card" style="background-color: greenyellow;">
-        <h5 class="card-header">Donatas</h5>
-    </div>
-         */
-
         players.forEach(function (player) {
             var playerCard = document.createElement("div");
             playerCard.className = "playerCard card";
             playerCard.style = "background-color: " + player.color + ";";
-            //playerCard.innerHTML = "<h5 class=\"card-header\"> " + player.name + "</h5> <div class=\"card-body\"><p class=\"card-text\">" + player.type + "</p></div>";
             var hostString = (player.type === "Host") ? " [host]" : "";
             playerCard.innerHTML = "<h5 class=\"card-header\"> " + player.name + hostString + "</h5>";
-            //console.log("Kortele:", playerCard);
             playerCardList.appendChild(playerCard);
-            //console.log("Naujas sarasas: ", playerCardList);
         });
     }
+
 
     function redirectToErrorPage(message) {
         submitForm("/Home/Error", message);
