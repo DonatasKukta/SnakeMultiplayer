@@ -11,6 +11,7 @@ namespace SnakeMultiplayer.Controllers
     //[Route("Lobby")]
     public class LobbyController : Controller
     {
+        private static string InvalidStringErrorMessage = @"Please use only letters, numbers and spaces only between words. ";
         [HttpGet]
         public IActionResult Index()
         {
@@ -23,10 +24,18 @@ namespace SnakeMultiplayer.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateLobby(string id, string playerName, [FromServices] GameServerService gameServer)
+        public IActionResult CreateLobby([FromServices] GameServerService gameServer, string id = "", string playerName = "")
         {
             ViewData["playerName"] = playerName;
             ViewData["lobbyId"] = id;
+
+            string errorMessage = IsValid(id, playerName);
+            if (!errorMessage.Equals(string.Empty))
+            {
+                ViewData["ErrorMessage"] = errorMessage;
+                return View();
+            }
+
             bool success = gameServer.TryCreateLobby(id, playerName, gameServer);
             if (success)
             {
@@ -36,9 +45,7 @@ namespace SnakeMultiplayer.Controllers
                 return View("Views/Lobby/Index.cshtml");
             }
 
-
             ViewData["ErrorMessage"] = $"Lobby with {id} already exists. Please enter different name";
-            ViewData["playerName"] = playerName;
             //return View("Views/Lobby/CreateLobby.cshtml");
             return View();
         }
@@ -52,11 +59,19 @@ namespace SnakeMultiplayer.Controllers
 
         //[HttpPost("/JoinLobby/{playerName}/{id}")]
         [HttpPost]
-        public IActionResult JoinLobby(string id, string playerName, [FromServices] GameServerService gameServer)
+        public IActionResult JoinLobby([FromServices] GameServerService gameServer, string id = "", string playerName= "")
         {
             ViewData["playerName"] = playerName;
             ViewData["lobbyId"] = id;
-            string errorMessage = gameServer.CanJoin(id, playerName);
+
+            string errorMessage = IsValid(id, playerName);
+            if (!errorMessage.Equals(string.Empty))
+            {
+                ViewData["ErrorMessage"] = errorMessage;
+                return View();
+            }
+
+            errorMessage = gameServer.CanJoin(id, playerName);
             if (errorMessage.Equals(string.Empty))
             {
                 SetCookie("PlayerName", playerName);
@@ -67,6 +82,30 @@ namespace SnakeMultiplayer.Controllers
             {
                 ViewData["ErrorMessage"] = errorMessage;
                 return View();
+            }
+        }
+
+        private static string IsValid(string lobbyName, string playerName)
+        {
+            if (String.IsNullOrEmpty(playerName))
+            {
+                return "Please enter your player name";
+            }
+            else if (String.IsNullOrEmpty(lobbyName))
+            {
+                return "Please enter lobby name";
+            }
+            else if (!GameServerService.ValidStringRegex.IsMatch(playerName))
+            {
+                return "Player name is incorrect.\n" + InvalidStringErrorMessage;
+            }
+            else if (!GameServerService.ValidStringRegex.IsMatch(lobbyName))
+            {
+                return "Lobby name is incorrect.\n" + InvalidStringErrorMessage;
+            }
+            else
+            {
+            return string.Empty;
             }
         }
 

@@ -10,6 +10,7 @@ using JsonLibrary;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace SnakeMultiplayer.Services
 {
@@ -20,6 +21,7 @@ namespace SnakeMultiplayer.Services
     /// </summary>
     public class GameServerService : IHostedService
     {
+        public static Regex ValidStringRegex = new Regex(@"^[a-zA-Z0-9]+[a-zA-Z0-9\s_]*[a-zA-Z0-9]+$"); 
         /// <summary>
         /// Represents lobbies and its players, with which server is communicating
         /// </summary>
@@ -43,14 +45,14 @@ namespace SnakeMultiplayer.Services
         private string AddPlayerToLobby(string lobby, string player, WebSocket socket)
         {
             if (socket == null)
-                throw new ArgumentNullException("Tried to add null web socket to concurrent list");
+                return "Tried to add null web socket to concurrent list";
             try
             {
                 return lobbies[lobby].AddPlayer(player, socket);
             }
-            catch (KeyNotFoundException ex)
+            catch (Exception ex)
             {
-                throw ex;
+                return ex.Message;
             }
         }
 
@@ -75,9 +77,16 @@ namespace SnakeMultiplayer.Services
                 Message message = await ReceiveMessageAsync(webSocket);
                 lobby = message.lobby;
                 playerName = message.sender;
-                string errorMessage = AddPlayerToLobby(lobby, playerName, webSocket);
+
+                if ( String.IsNullOrEmpty(lobby) || !ValidStringRegex.IsMatch(lobby))
+                    throw new ArgumentException($"Incorrent lobby name \"{lobby}\" received from web socket");
+                else if (String.IsNullOrEmpty(playerName) || !ValidStringRegex.IsMatch(playerName))
+                    throw new ArgumentException($"Incorrent player name \"{playerName}\" received from web socket");
+
+                    string errorMessage = AddPlayerToLobby(lobby, playerName, webSocket);
+
                 if (!errorMessage.Equals(string.Empty))
-                    throw new OperationCanceledException("errorMessage");
+                    throw new OperationCanceledException(errorMessage);
 
                 lobbies[lobby].LobbyService.SendPLayerStatusMessage();
 
