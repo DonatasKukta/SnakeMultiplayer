@@ -5,9 +5,10 @@ var length;
 var TLborder;
 var BRborder;
 var margin;
-var baseCell = new Cell(undefined, "red", "green");
+var baseCell = new Cell(undefined, "whitesmoke", "dimgrey");
 var cellCount = 20;
 var relMarginSize = 0.1;
+var canvasLength = -1;
 
 function onResize() {
     console.log(">>Resizing")
@@ -17,7 +18,7 @@ function onResize() {
 }
 
 function ResizeCanvas() {
-    var canvasLength = -1;
+    
     if (window.innerWidth > window.innerHeight) {
         canvasLength = window.innerHeight - 5;
     } else {
@@ -62,7 +63,7 @@ function setOtherCanvasVariables(canvasLength) {
 function DrawBaseCanvas() {
 
     console.log(TLborder, BRborder);
-    CanvasContext.fillStyle = "yellow";
+    CanvasContext.fillStyle = "gainsboro";
     CanvasContext.fillRect(0, 0, length, length);
     CanvasContext.stroke();
 
@@ -82,22 +83,6 @@ function DrawCanvasBorder() {
     CanvasContext.strokeStyle = "red";
     CanvasContext.stroke();
 }
-/*
-function DrawGrid() {
-    var x = TLborder;
-    var y = TLborder;
-
-    while (x <= BRborder) {
-        while (y <= BRborder) {
-            DrawFillRenctangle(x, y, baseCell.size, "red");
-            DrawOutlineRectangle(x, y, baseCell.size, "green");
-            y += baseCell.size;
-        }
-        y = TLborder;
-        x += baseCell.size;
-    }
-}
-*/
 function DrawFillRenctangle(x, y, length, fillColor) {
     CanvasContext.fillStyle = fillColor;
     CanvasContext.fillRect(x, y, length, length);
@@ -115,4 +100,21 @@ function DrawRectangle(x, y, xx, yy, fillColor, outlineColor) {
     CanvasContext.strokeStyle = outlineColor;
     CanvasContext.rect(x, y, xx, yy);
     CanvasContext.stroke();
+}
+
+function DrawText(text, startx, starty) {
+    CanvasContext.save();
+    var middle = canvasLength / 2;
+    CanvasContext.textAlign = "center";
+
+    CanvasContext.font = "80px  Arial"
+
+    CanvasContext.strokeStyle = "black";
+    CanvasContext.lineWidth = 8;
+    //CanvasContext.strokeText(text, startx, starty)
+    CanvasContext.strokeText(text, middle, starty)
+    CanvasContext.fillStyle = "red"
+    //CanvasContext.fillText(text, startx, starty);
+    CanvasContext.fillText(text, middle, starty);
+    CanvasContext.restore();
 }

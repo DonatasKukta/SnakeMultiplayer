@@ -69,4 +69,10 @@
     getCellCoord(cellNumber) {
         return this.startBorder + (cellNumber * this.baseCellParams.size);
     }
+
+    drawGameOver() {
+        var gameOverY = this.getCellCoord(7);
+        var gameOverX = this.getCellCoord(4);
+        DrawText("Game Over", gameOverY, gameOverY);
+    }
 }

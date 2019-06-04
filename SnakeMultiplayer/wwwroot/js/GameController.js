@@ -80,6 +80,7 @@ class GameController {
                 break;
             case "End":
                 // close web socket connection, throw error.
+                this.cellContainer.drawGameOver();
                 this.mainDispatcher.dispatch("onGameEndReceived");
                 break;
             case "Exit":
@@ -89,6 +90,7 @@ class GameController {
     }
 
     HandleStart(startMessage) {
+        this.cellContainer.drawGrid();
         var food = startMessage.food;
         if (food !== null) {
             this.cellContainer.drawCell(food.x, food.y, "black");
