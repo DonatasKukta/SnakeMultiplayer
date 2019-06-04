@@ -96,6 +96,7 @@ namespace SnakeMultiplayer.Services
                 {
                     this.timer.Stop();
                     this.timer.Dispose();
+                    this.State = LobbyStates.Idle;
                 }
             }
             else
@@ -173,7 +174,9 @@ namespace SnakeMultiplayer.Services
                         if (message.sender.Equals(hostPlayer) && State.Equals(LobbyStates.Idle))
                         {
                             Debug.WriteLine($"Inicializuotas žaidimas {ID} lobby  ");
-                            InitializeGame();
+                            string inicializationError = InitializeGame();
+
+
                             var report = arena.GenerateReport();
                             SendLobbyMessage(new Message("server", this.ID, "Start", new {Start = report }));
                             StartTimer(); // disable timer for debugging

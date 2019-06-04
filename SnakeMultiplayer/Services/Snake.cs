@@ -25,7 +25,7 @@ namespace SnakeMultiplayer.Services
         public void setInitialPosition(Coordinate coordinate)
         {
             this.IsActive = true;
-            body.Clear();
+            this.body = new LinkedList<Coordinate>();
             body.AddFirst(coordinate);
         }
         

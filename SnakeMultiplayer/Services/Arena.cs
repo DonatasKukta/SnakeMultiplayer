@@ -53,7 +53,7 @@ namespace SnakeMultiplayer.Services
             return report;
         }
 
-        // Inefficient. Maybe use it in corporation with cell array: take empty cells
+        // Inefficient. Maybe use it in corporation with cell array: take one random empty cell
         // Randomly generates food at new location
         /// <summary>
         /// If needed, generates food at random location,saves food location to board.
@@ -64,6 +64,7 @@ namespace SnakeMultiplayer.Services
             if (force || food != null)
                 return;
 
+            food = null;
             var newFood = new Coordinate(rnd.Next(0, width), rnd.Next(0, height));
             var isFoodSet = false;
             bool contains;
@@ -87,6 +88,8 @@ namespace SnakeMultiplayer.Services
                     return;
                 }
             }
+            // Zaidejas laimejo??? handle this. isvengti infinite loop
+            throw new Exception("Could not set food");
         }
 
         public void SetSettings(Settings settings)
@@ -123,12 +126,14 @@ namespace SnakeMultiplayer.Services
 
         public string PrepareForNewGame()
         {
+
             // create new board of cells
             this.board = new Cells[width, height];
             // set initial positions for snakes and next pending positions
             if (!SetInitialPositionsAndActions())
                 return "Could not set initial positions";
             // set food
+            this.food = null;
             GenerateFood(true);
 
             return string.Empty;
