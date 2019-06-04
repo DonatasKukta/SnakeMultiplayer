@@ -63,7 +63,7 @@ function setOtherCanvasVariables(canvasLength) {
 function DrawBaseCanvas() {
 
     console.log(TLborder, BRborder);
-    CanvasContext.fillStyle = "gainsboro";
+    CanvasContext.fillStyle = "lightgrey";
     CanvasContext.fillRect(0, 0, length, length);
     CanvasContext.stroke();
 

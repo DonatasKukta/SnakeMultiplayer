@@ -12,14 +12,20 @@
         </div>
     </div>
 }
+    <div class="container">
+        <h1 style="text-align: center;"> Play snake with fiends!</h1>
+        <br/>
 
-<div class="d-flex justify-content-center">
-    <form asp-controller="Lobby" asp-action="JoinLobby" method="get">
-        <button type="submit" class="btn btn-primary">Join lobby</button>
-    </form>
-</div>
-<div class="d-flex justify-content-center">
-    <form asp-controller="Lobby" asp-action="CreateLobby" method="get">
-        <button type="submit" class="btn btn-primary">Create lobby</button>
-    </form>
-</div>
+        <div class="row" style="text-align: center;">
+            <div class="col-sm">
+                <form asp-controller="Lobby" asp-action="JoinLobby" method="get">
+                    <button type="submit" class="btn btn-success btn-lg btn-block btn-huge h-50">Join existing lobby</button>
+                </form>
+            </div>
+            <div class="col-sm">
+                <form asp-controller="Lobby" asp-action="CreateLobby" method="get">
+                    <button type="submit" class="btn btn-primary btn-lg btn-block btn-huge">Create new lobby</button>
+                </form>
+            </div>
+        </div>
+    </div>
