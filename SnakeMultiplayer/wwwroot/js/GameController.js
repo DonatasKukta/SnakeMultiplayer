@@ -80,7 +80,7 @@ class GameController {
                 break;
             case "End":
                 // close web socket connection, throw error.
-
+                this.mainDispatcher.dispatch("onGameEndReceived");
                 break;
             case "Exit":
                 this.mainDispatcher.dispatch("onExitReceived", message.body);

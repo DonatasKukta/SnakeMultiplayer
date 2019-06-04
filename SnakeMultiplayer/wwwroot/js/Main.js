@@ -96,12 +96,19 @@
         DisableStartButton();
     }
 
-    function onGameEndReceived(e) {
+    async function onGameEndReceived(e) {
+        //Sleep for 3000ms (3 seconds)
+        await Sleep(3000);
         var element = document.getElementById('Canvas');
         console.log("canvas element:", element);
         //element.style.display = 'none'; //or
         element.style.visibility = 'hidden';
-        document.getElementById('navigation_bar').scrollIntoView(behavior: "smooth");
+        document.getElementById('navigation_bar').scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+            inline: "start",
+        });
+        
         EnableStartButton();
     }
 
@@ -152,5 +159,9 @@
 
         document.body.appendChild(form);
         form.submit();
+    }
+    // source: https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
+    function Sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 })();
