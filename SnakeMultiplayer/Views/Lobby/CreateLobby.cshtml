@@ -3,14 +3,14 @@
     ViewData["Title"] = "Create Lobby";
 
     string errorMessage = ViewData["ErrorMessage"] == null ? string.Empty : (string)ViewData["ErrorMessage"];
-    int x = 0;
-    //<div class="d-flex justify-content-center container">
+    string playerName = ViewData["playerName"] == null ? string.Empty : (string)ViewData["playerName"];
+    string lobbyName = ViewData["lobbyId"] == null ? string.Empty : (string)ViewData["lobbyId"];
 }
 
 
 <div class="d-flex justify-content-center container">
     <div class="justify-content-center">
-        <h2>Create Lobby</h2>
+        <h2>Create new lobby</h2>
         @if (!errorMessage.Equals(string.Empty))
         {
             <div>
@@ -22,11 +22,11 @@
         <div>
             <form asp-controller="Lobby" asp-action="CreateLobby" method="post">
                 <label> Your nickname:</label>
-                <input type="text" class="form-control" name="playerName">
+                <input type="text" class="form-control" name="playerName" value="@playerName">
                 <label> New lobby name:</label>
-                <input type="text" class="form-control" name="id">
-                <br />
-                <button type="submit" class="btn btn-primary">Create</button>
+                <input type="text" class="form-control" name="id" value="@lobbyName">
+                <br/>
+                <button type="submit" class="btn btn-primary btn-block">Create</button>
             </form>
         </div>
     </div>
