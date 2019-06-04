@@ -87,7 +87,12 @@
     function onGameStartRececeived(e) {
         var element = document.getElementById('Canvas');
         element.style.visibility = 'visible';
-        element.scrollIntoView();
+        //element.scrollLeft = 20;
+        element.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+            inline: "start",
+        });
         DisableStartButton();
     }
 
@@ -96,7 +101,7 @@
         console.log("canvas element:", element);
         //element.style.display = 'none'; //or
         element.style.visibility = 'hidden';
-        document.getElementById('navigation_bar').scrollIntoView();
+        document.getElementById('navigation_bar').scrollIntoView(behavior: "smooth");
         EnableStartButton();
     }
 
