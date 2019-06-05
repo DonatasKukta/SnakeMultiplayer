@@ -174,11 +174,11 @@ namespace SnakeMultiplayer.Services
             {
                 if (snake.Value == null || !snake.Value.IsActive)
                 {
-                    break;
+                    continue;
                 }
 
                 if(!pendingActions.TryGetValue(snake.Key, out MoveDirection currAction ))
-                    break;
+                    continue;
                  
                 //var currAction = pendingActions[snake.Key];
                 var newHead = snake.Value.Head();
@@ -188,7 +188,7 @@ namespace SnakeMultiplayer.Services
                 if ( ( newHead.x < 0  || width <= newHead.x )|| (newHead.y < 0 || width <= newHead.y)) // is wall???
                 {
                     snake.Value.Deactivate();
-                    break;
+                    continue;
                 }
 
                 if (board[newHead.x, newHead.y].Equals(Cells.empty)){
@@ -202,10 +202,10 @@ namespace SnakeMultiplayer.Services
                 else //if (board[newHead.x, newHead.y].Equals(Cells.snake))
                 {
                     snake.Value.Deactivate();
-                    break;
+                    continue;
                 }
                 if (moveResult == null)
-                    break;
+                    continue;
 
                 board[moveResult.Item1.x, moveResult.Item1.y] = Cells.snake;
                 if(moveResult.Item2 != null)
@@ -215,6 +215,7 @@ namespace SnakeMultiplayer.Services
             }
             GenerateFood(false);
         }
+
         /// <summary>
         ///  Error free
         /// </summary>
