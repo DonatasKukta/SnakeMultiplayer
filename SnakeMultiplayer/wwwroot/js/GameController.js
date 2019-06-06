@@ -52,7 +52,8 @@ class GameController {
     onOpenedSocket(e) {
         console.log("Socket opened");
         this.sendPlayerListRequest();
-        this.sendSettingUpdate();
+        var settings = { cellCount: this.cellContainer.gridSize, isWall: false, speed: "Normal" };
+        this.sendSettingUpdate(settings);
         this.mainDispatcher.dispatch("onWebSocketOpened");
     }
 
@@ -69,6 +70,9 @@ class GameController {
             case "Update":
                 // Update game state
                 this.HandleUpdate(message.body.status);
+                break;
+            case "Settings":
+                this.mainDispatcher.dispatch("onSettingsReceived", message.body.Settings);
                 break;
             case "Start":
                 // Raise game started event
@@ -176,8 +180,8 @@ class GameController {
         this.socketController.send("Start", null);
     }
 
-    sendSettingUpdate() {
-        var settings = { cellCount : this.cellContainer.gridSize, isWall: false };
+    sendSettingUpdate(settings) {
+        //var settings = { cellCount : this.cellContainer.gridSize, isWall: false };
 
         this.socketController.send("Settings", settings);
     }
