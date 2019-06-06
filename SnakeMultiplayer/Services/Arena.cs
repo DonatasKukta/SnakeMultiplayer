@@ -21,12 +21,14 @@ namespace SnakeMultiplayer.Services
         protected bool isWall;
         protected Coordinate food;
         protected Random rnd = new Random(Guid.NewGuid().GetHashCode());
-        
+        public Speed Speed { get; protected set; }
+
         public Arena(ConcurrentDictionary<string, Snake> players)
         {
             snakes = players;
             pendingActions = new ConcurrentDictionary<string, MoveDirection>();
             food = null;
+            Speed = Speed.Normal;
         }
         public ArenaStatus GenerateReport()
         {
@@ -53,7 +55,9 @@ namespace SnakeMultiplayer.Services
             return report;
         }
 
-        // Inefficient. Maybe use it in corporation with cell array: take one random empty cell
+        // Inefficient. 
+        // TODO: get random coordinates and use breath-first search algorithm 
+        // to find nearest empty cell.
         // Randomly generates food at new location
         /// <summary>
         /// If needed, generates food at random location,saves food location to board.
@@ -92,12 +96,43 @@ namespace SnakeMultiplayer.Services
             throw new Exception("Could not set food");
         }
 
-        public void SetSettings(Settings settings)
+        public Settings SetSettings(Settings settings)
         {
-            //  ConsiderSpeedSetting
+            if (settings == null)
+                return null;
+
+            // Consider Speed Setting
+            if(settings.cellCount != 0)
+            {
             this.width = settings.cellCount;
             this.height = settings.cellCount;
-            this.isWall = settings.isWall;
+            }
+            if (settings.isWall != null)
+            {
+                this.isWall = true;
+
+            }
+            if (!String.IsNullOrEmpty(settings.speed))
+            {
+                if (settings.speed.Equals("NoSpeed"))
+                {
+                    this.Speed = Speed.NoSpeed;
+                }
+                else if (settings.speed.Equals("Slow"))
+                {
+                    this.Speed = Speed.Slow;
+                }
+                else if (settings.speed.Equals("Normal"))
+                {
+                    this.Speed = Speed.Normal;
+                }
+                else if (settings.speed.Equals("Fast"))
+                {
+                    this.Speed = Speed.Fast;
+                }
+            }
+
+            return new Settings(this.width, isWall, Speed.ToString());
         }
 
         public Coordinate getInitalCoordinte(InitialPosition pos)
@@ -184,8 +219,8 @@ namespace SnakeMultiplayer.Services
                 var newHead = snake.Value.Head();
                 newHead.Update(currAction);
                 Tuple<Coordinate, Coordinate> moveResult = null;
-
-                if ( ( newHead.x < 0  || width <= newHead.x )|| (newHead.y < 0 || width <= newHead.y)) // is wall???
+                //TODO: implement support of no wall.
+                if (  newHead.x < 0  || width <= newHead.x  || newHead.y < 0 || width <= newHead.y) 
                 {
                     snake.Value.Deactivate();
                     continue;
@@ -273,6 +308,13 @@ namespace SnakeMultiplayer.Services
                 return MoveDirection.None;
             }
         }
+    }
+    public enum Speed
+    {
+        NoSpeed = 0,
+        Fast = 1,
+        Normal = 2,
+        Slow = 3
     }
 
     public enum InitialPosition

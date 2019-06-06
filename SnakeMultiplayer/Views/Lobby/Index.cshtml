@@ -14,17 +14,31 @@
         <h1> @ViewData["lobbyId"] lobby</h1>
     </div>
 </div>
+
 <br />
 <div id="playerCards" class="d-flex justify-content-center">
 </div>
 <br />
 @if (isHost)
 {
-<div class="d-flex justify-content-center">
-    <button id="startButton" type="button" class="btn btn-success">Start game</button>
-</div>
-}
+    <div class="d-flex justify-content-center">
+        <div class="btn-group">
+            <button id ="SpeedBtn"type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Speed
+            </button>
+            <div class="dropdown-menu">
+                <a id="SlowSpeedBtn"    class="dropdown-item" >Slow</a>
+                <a id="NormalSpeedBtn"  class="dropdown-item" >Normal</a>
+                <a id="FastSpeedBtn"    class="dropdown-item" >Fast</a>
+                <div class="dropdown-divider"></div>
+                <a id="NoSpeedBtn"      class="dropdown-item" >No speed.</a>
+            </div>
+        </div>
+        <button id="startButton" type="button" class="btn btn-success">Start game</button>
+    </div>
 
+}
+<br />
 <div id="CanvasDiv" align="center">
     <canvas id="Canvas" style="visibility: hidden;">  </canvas>
 </div>

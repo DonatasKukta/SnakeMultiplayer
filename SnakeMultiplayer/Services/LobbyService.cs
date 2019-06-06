@@ -25,6 +25,7 @@ namespace SnakeMultiplayer.Services
         private readonly GameServerService gameServer;
         private Arena arena;
         private System.Timers.Timer timer;
+        public bool IsTimer { get; private set; }
 
         public LobbyService(string id, string host, int maxPlayers, [FromServices] GameServerService gameServer)
         {
@@ -35,6 +36,8 @@ namespace SnakeMultiplayer.Services
             this.creationTime = DateTime.Now;
             this.gameServer = gameServer;
             this.arena = new Arena(players);
+            timer = null;
+            IsTimer = false;
         }
 
         public string AddPlayer(string playerName)
@@ -47,9 +50,6 @@ namespace SnakeMultiplayer.Services
             {
                 if (players.TryAdd(playerName, new Snake(getValidPlayerColor())))
                 {
-                    // Update lobby status to all lobby players.
-                    //Message playersStatus = CreatePlayerStatusMessage();
-                    //SendLobbyMessage(playersStatus);
                     return string.Empty;
                 }
                 else
@@ -73,12 +73,19 @@ namespace SnakeMultiplayer.Services
 
         private void StartTimer()
         {
-            //initialize timer
+            if (arena.Speed.Equals(Speed.NoSpeed)){
+                IsTimer = false;
+                timer = null;
+            }
+            else
+            {
+            IsTimer = true;
             timer = new System.Timers.Timer();
-            timer.Interval = 200; // 1 second
+            timer.Interval = 100 * (int)arena.Speed;
             timer.Elapsed += new System.Timers.ElapsedEventHandler(OnTimedUpdate);
             timer.AutoReset = true;
             timer.Start();
+            }
         }
 
         private async void OnTimedUpdate(object source, System.Timers.ElapsedEventArgs e)
@@ -96,8 +103,8 @@ namespace SnakeMultiplayer.Services
                 {
                     this.timer.Stop();
                     this.timer.Dispose();
-                    this.State = LobbyStates.Idle;
                 }
+                    this.State = LobbyStates.Idle;
             }
             else
             {
@@ -190,7 +197,8 @@ namespace SnakeMultiplayer.Services
                         {
                             //Debug.WriteLine("Gauti settings:" + message.body.ToString());
                             var settings = Settings.Deserialize(message.body);
-                            this.arena.SetSettings(settings);
+                            settings = this.arena.SetSettings(settings);
+                            SendLobbyMessage(new Message("server", this.ID,"Settings" ,new {Settings = settings }));
                         }
                         break;
                     case "Update": // updating only while in game
@@ -198,16 +206,20 @@ namespace SnakeMultiplayer.Services
                             break;
                         var direction = (MoveDirection) message.body;
                         arena.SetPendingAction(message.sender, direction);
-                        //OnTimedUpdate(null, null); // for debuging
+
+                        // if speed is set to no speed, update on each player movement.
+                        if (!IsTimer)
+                            OnTimedUpdate(null, null);
+
                         break;
                     default: //echo
                         Debug.WriteLine($"---Unexpected message from {message.sender}, content: {message.body.ToString()}");
                         break;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-
+                throw;
             }
         }
 

@@ -9,13 +9,9 @@
 
     if (PlayerName == null || LobbyId == null) {
         // Redirect to error page.
+        redirectToErrorPage("An error has occured. Probably could not use cookies. Please enable cookies and try again.");
     }
 
-    if (document.getElementById("startButton") !== null) {
-    document.getElementById("startButton").onclick = onStartGameButtonClick.bind(this);
-    }
-    
-    window.addEventListener('resize', reSet, false);
     var MainDispatcher = new Dispatcher();
     MainDispatcher.on("onPlayerListReceived", updatePlayers.bind(this));
     MainDispatcher.on("onExitReceived", redirectToErrorPage.bind(this));
@@ -23,8 +19,8 @@
     MainDispatcher.on("onGameEndReceived", onGameEndReceived.bind(this));
     MainDispatcher.on("onWebSocketOpened", EnableStartButton.bind(this));
     MainDispatcher.on("onWebSocketClosed", null); // to be implemented
+    MainDispatcher.on("onSettingsReceived", onUpdateSettings.bind(this));
 
-    DisableStartButton();
 
     var gameController = new GameController(PlayerName, LobbyId, MainDispatcher);
     gameController.setEnvironment();
@@ -33,6 +29,36 @@
     window.addEventListener('beforeunload', (event) => {
         gameController.socketController.close();
     });    
+    window.addEventListener('resize', reSet, false);
+    
+    DisableStartButton();
+
+    if (document.getElementById("startButton") !== null) {
+        document.getElementById("startButton").onclick = onStartGameButtonClick.bind(this);
+    }
+
+    if (document.getElementById("SlowSpeedBtn") !== null) {
+        document.getElementById("SlowSpeedBtn").addEventListener('click', function () {
+            gameController.sendSettingUpdate({ speed: "Slow" });
+        })
+        }
+    
+    if (document.getElementById("NormalSpeedBtn") !== null) {
+        document.getElementById("NormalSpeedBtn").addEventListener('click', function () {
+            gameController.sendSettingUpdate({ speed: "Normal" });
+        })
+    }
+    if (document.getElementById("FastSpeedBtn") !== null) {
+        document.getElementById("FastSpeedBtn").addEventListener('click', function () {
+            gameController.sendSettingUpdate({ speed: "Fast" });
+        })
+    }
+    if (document.getElementById("NoSpeedBtn") !== null) {
+        document.getElementById("NoSpeedBtn").addEventListener('click', function () {
+            gameController.sendSettingUpdate({ speed: "NoSpeed" });
+        })
+    }
+
     document.onkeydown = function (e) {
         switch (e.key) {
             case 'ArrowUp':
@@ -72,8 +98,13 @@
     }
 
     // To be implemented
-    function onUpdateSettings() {
-        gameController.sendSettingUpdate();
+    function onUpdateSettings(settings) {
+        var speed;
+        if (settings !== null || settings.speed !== null) {
+            speed = settings.speed;
+        }
+        document.getElementById("SpeedBtn").textContent = "Seep: " + speed;
+
     }
     // To be implemented
     function onCountDownEvent(e) {
