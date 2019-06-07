@@ -143,15 +143,15 @@ namespace SnakeMultiplayer.Services
             }
             else if (pos.Equals(InitialPosition.UpRight))
             {
-                return new Coordinate(width - 1, 1);
+                return new Coordinate(width - 2, 1);
             }
             else if (pos.Equals(InitialPosition.DownLeft))
             {
-                return new Coordinate(1, height - 1);
+                return new Coordinate(1, height - 2);
             }
             else if (pos.Equals(InitialPosition.DownRight))
             {
-                return new Coordinate(width - 1, height - 1);
+                return new Coordinate(width - 2, height - 2);
             }
             else
             {
