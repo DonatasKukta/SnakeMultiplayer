@@ -2,14 +2,10 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.WebSockets;
-using System.Threading;
 using System.Threading.Tasks;
 using JsonLibrary;
 using Microsoft.AspNetCore.Mvc;
-using JsonLibrary;
 using System.Diagnostics;
-using System.Collections;
 
 namespace SnakeMultiplayer.Services
 {
@@ -90,7 +86,7 @@ namespace SnakeMultiplayer.Services
             timer.Start();
         }
 
-        private async void OnTimedUpdate(object source, System.Timers.ElapsedEventArgs e)
+        private void OnTimedUpdate(object source, System.Timers.ElapsedEventArgs e)
         {
 
             // update new status
@@ -142,7 +138,7 @@ namespace SnakeMultiplayer.Services
             
         }
 
-        public async void sendCloseLobbyMessage(string reason)
+        public void sendCloseLobbyMessage(string reason)
         {
             SendLobbyMessage(new Message("server", this.ID, "Exit", new { message = reason}));
         }
@@ -229,14 +225,9 @@ namespace SnakeMultiplayer.Services
             }
         }
 
-        private async void SendLobbyMessage(Message message)
+        private void SendLobbyMessage(Message message)
         {
             gameServer.SendLobbyMessage(this.ID, message);
-        }
-
-        private async void SendPlayerMessage(Message message)
-        {
-            throw new NotImplementedException();
         }
 
         public bool RemovePlayer(string playerName)

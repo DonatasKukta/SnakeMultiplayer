@@ -1,14 +1,11 @@
 ﻿using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using JsonLibrary;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -56,7 +53,7 @@ namespace SnakeMultiplayer.Services
             }
         }
 
-        public async void SendLobbyMessage(string lobby, Message message)
+        public void SendLobbyMessage(string lobby, Message message)
         {
             if (!lobbies.TryGetValue(lobby, out Lobby currLobby))
                 return;
@@ -83,7 +80,7 @@ namespace SnakeMultiplayer.Services
                 else if (String.IsNullOrEmpty(playerName) || !ValidStringRegex.IsMatch(playerName))
                     throw new ArgumentException($"Incorrent player name \"{playerName}\" received from web socket");
 
-                    string errorMessage = AddPlayerToLobby(lobby, playerName, webSocket);
+                string errorMessage = AddPlayerToLobby(lobby, playerName, webSocket);
 
                 if (!errorMessage.Equals(string.Empty))
                     throw new OperationCanceledException(errorMessage);
@@ -108,15 +105,10 @@ namespace SnakeMultiplayer.Services
                     lobbies[lobby].LobbyService.HandleMessage(msg);
                 }
             }
-            catch (OperationCanceledException e)
-            {
-                // Unexpected error! try again pls
-                // log exception
-                Console.WriteLine(e.Message);
-            }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                // Unexpected error! try again pls
+                // log exception                
             }
             finally
             {
@@ -135,8 +127,15 @@ namespace SnakeMultiplayer.Services
 
         private async void SendMessageAsync(WebSocket webSocket, Message message)
         {
+            try
+            {
             var buffer = Strings.getBytes(Message.Serialize(message));
             await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Could not send message: {message.lobby}, of type {message.type}. Error: {ex.Message}");
+            }
         }
 
         private async Task<Message> ReceiveMessageAsync(WebSocket webSocket)

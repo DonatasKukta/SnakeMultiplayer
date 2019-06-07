@@ -35,9 +35,6 @@
             return;
         var i;
         for (i = 0; i < coordinateArray.length; i++) {
-            //var cordx = this.getCellCoord();
-            //var cordy = this.getCellCoord();
-
             this.drawBaseCell(coordinateArray[i].x, coordinateArray[i].y);
         }
     }

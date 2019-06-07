@@ -18,7 +18,7 @@
     MainDispatcher.on("onStartReceived", onGameStartRececeived.bind(this));
     MainDispatcher.on("onGameEndReceived", onGameEndReceived.bind(this));
     MainDispatcher.on("onWebSocketOpened", EnableHostButtons.bind(this));
-    MainDispatcher.on("onWebSocketClosed", null); // to be implemented
+    MainDispatcher.on("onWebSocketClosed", redirectToErrorPage.bind(this)); // to be implemented
     MainDispatcher.on("onSettingsReceived", onUpdateSettings.bind(this));
 
 
@@ -137,18 +137,15 @@
         }
     }
 
-    // To be implemented
+
     function onUpdateSettings(settings) {
         var speed;
         if (settings !== null || settings.speed !== null) {
             speed = settings.speed;
+            var speedBtn = document.getElementById("SpeedBtn");
+            if (speedBtn !=null)
+                speedBtn.textContent = "Seep: " + speed;
         }
-        document.getElementById("SpeedBtn").textContent = "Seep: " + speed;
-
-    }
-    // To be implemented
-    function onCountDownEvent(e) {
-
     }
 
     function onStartGameButtonClick(e) {
@@ -158,7 +155,6 @@
     function onGameStartRececeived(e) {
         var element = document.getElementById('Canvas');
         element.style.visibility = 'visible';
-        //element.scrollLeft = 20;
         element.scrollIntoView({
             behavior: "smooth",
             block: "start",
@@ -168,7 +164,6 @@
     }
 
     async function onGameEndReceived(e) {
-        //Sleep for 3000ms (3 seconds)
         await Sleep(3000);
         var element = document.getElementById('Canvas');
         console.log("canvas element:", element);

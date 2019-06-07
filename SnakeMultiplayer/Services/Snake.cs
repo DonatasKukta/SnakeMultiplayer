@@ -8,10 +8,6 @@ namespace SnakeMultiplayer.Services
     public class Snake
     {
         private LinkedList<Coordinate> body;
-
-        //public delegate void SnakeMovementEventHandler(object source, EventArgs args);
-        public delegate void SnakeMovementEventHandler(Coordinate head, Coordinate tail, bool isFood);
-        public event SnakeMovementEventHandler SnakeMoved;
         public readonly PlayerColor color;
         public bool IsActive { get; private set; }
         public Coordinate tail  { get; private set; }
@@ -51,7 +47,6 @@ namespace SnakeMultiplayer.Services
                 body.RemoveLast();
             }
             return new Tuple<Coordinate, Coordinate>(Head(), tail);
-            //SnakeMoved(body.First.Value, body.Last.Value, isFood);
         }
         /// <summary>
         /// Check whether direction is valid.
