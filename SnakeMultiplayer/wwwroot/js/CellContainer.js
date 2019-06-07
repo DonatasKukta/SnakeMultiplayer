@@ -82,6 +82,7 @@
     drawGameOver() {
         var gameOverY = this.getCellCoord(7);
         var gameOverX = this.getCellCoord(4);
-        DrawText("Game Over", gameOverY, gameOverY);
+        var fontSize = (BRborder- TLborder) / 10;
+        DrawText("Game Over", gameOverY, gameOverY, fontSize);
     }
 }

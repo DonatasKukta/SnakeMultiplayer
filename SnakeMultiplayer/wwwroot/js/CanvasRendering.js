@@ -102,15 +102,15 @@ function DrawRectangle(x, y, xx, yy, fillColor, outlineColor) {
     CanvasContext.stroke();
 }
 
-function DrawText(text, startx, starty) {
+function DrawText(text, startx, starty, fontSize) {
     CanvasContext.save();
     var middle = canvasLength / 2;
     CanvasContext.textAlign = "center";
 
-    CanvasContext.font = "80px  Arial"
+    CanvasContext.font = fontSize + "px  Arial"
 
     CanvasContext.strokeStyle = "black";
-    CanvasContext.lineWidth = 8;
+    CanvasContext.lineWidth = fontSize/10;
     //CanvasContext.strokeText(text, startx, starty)
     CanvasContext.strokeText(text, middle, starty)
     CanvasContext.fillStyle = "red"
