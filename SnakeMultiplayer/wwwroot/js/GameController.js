@@ -1,5 +1,5 @@
 ﻿class Snake {
-    constructor(name, color) {
+    constructor(name, color, x, y) {
         this.body = new CustomLinkedList();
         this.name = name;
         this.color = color;
@@ -24,6 +24,13 @@
         }
     }
 
+    updateCoord(head, tail) {
+        this.body.addFirst(head);
+
+        if (tail != null)
+            this.body.deleteLast();
+    }
+
     getBodyArray() {
         return this.body.getArray();
     }
@@ -31,7 +38,8 @@
 
 class GameController {
     constructor(playerName, lobbyId, mainDispatcher) {
-        this.snakes = new Array();
+        //this.snakes = new Array();
+        this.snakes = {};
         this.snakeCount = 0;
         //this.socket;
         this.mainDispatcher = mainDispatcher;
@@ -111,7 +119,8 @@ class GameController {
             //this.cellContainer.updateSnake(color, head, tail);
             var snake = new Snake(player, color);
             snake.setStartPoint(head.x, head.y);
-            this.snakes.push(snake);
+            //this.snakes.push(snake);
+            this.snakes[player] = snake;
         }
         this.drawSnakes();
     }
@@ -130,12 +139,19 @@ class GameController {
             var player = snakesArray[i].player;
             var color = snakesArray[i].color;
 
+            this.snakes[player].updateCoord(head, tail);
             this.cellContainer.updateSnake(color, head, tail);
         }
-        // Disable inactive snakes
+
+        // Unpaint inactive snakes
         var snakesArray = updateMessage.DisabledSnakes;
         for (i = 0; i < snakesArray.length; i++) {
+            var player = snakesArray[i];
 
+            if (this.snakes[player] != null) {
+                this.cellContainer.clearCoords(this.snakes[player].getBodyArray());
+                this.snakes[player] = null;
+            }
         }
     }
 
@@ -187,8 +203,12 @@ class GameController {
     }
 
     drawSnakes() {
-        for (var i = 0; i < this.snakes.length; i++) {
-            this.cellContainer.initializeSnake(this.snakes[i].getBodyArray(), this.snakes[i].color);
+
+        for(var key in this.snakes) {
+            var snake = this.snakes[key];
+            if (snake != null) {
+                this.cellContainer.initializeSnake(this.snakes[key].getBodyArray(), this.snakes[key].color);
+            }
         }
     }
 }

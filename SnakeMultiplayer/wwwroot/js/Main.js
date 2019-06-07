@@ -17,7 +17,7 @@
     MainDispatcher.on("onExitReceived", redirectToErrorPage.bind(this));
     MainDispatcher.on("onStartReceived", onGameStartRececeived.bind(this));
     MainDispatcher.on("onGameEndReceived", onGameEndReceived.bind(this));
-    MainDispatcher.on("onWebSocketOpened", EnableStartButton.bind(this));
+    MainDispatcher.on("onWebSocketOpened", EnableHostButtons.bind(this));
     MainDispatcher.on("onWebSocketClosed", null); // to be implemented
     MainDispatcher.on("onSettingsReceived", onUpdateSettings.bind(this));
 
@@ -29,9 +29,9 @@
     window.addEventListener('beforeunload', (event) => {
         gameController.socketController.close();
     });    
-    window.addEventListener('resize', reSet, false);
+    window.addEventListener('resize', reSet.bind(this), false);
     
-    DisableStartButton();
+    DisableHostButtons();
 
     if (document.getElementById("startButton") !== null) {
         document.getElementById("startButton").onclick = onStartGameButtonClick.bind(this);
@@ -59,26 +59,60 @@
         })
     }
 
+    var keyDownController = {};
+
     document.onkeydown = function (e) {
         switch (e.key) {
             case 'ArrowUp':
                 e.preventDefault();
-                gameController.sendMovementUpdate(MoveDirection.Up);
+                if (keyDownController['ArrowUp'] == null) {
+                    gameController.sendMovementUpdate(MoveDirection.Up);
+                    keyDownController['ArrowUp'] = true;
+                }
                 break;
             case 'ArrowDown':
                 e.preventDefault();
-                gameController.sendMovementUpdate(MoveDirection.Down);
+                if (keyDownController['ArrowDown'] == null) {
+                    gameController.sendMovementUpdate(MoveDirection.Down);
+                    keyDownController['ArrowDown'] = true;
+                }
                 break;
             case 'ArrowLeft':
                 e.preventDefault();
-                gameController.sendMovementUpdate(MoveDirection.Left);
+                if (keyDownController['ArrowLeft'] == null) {
+                    gameController.sendMovementUpdate(MoveDirection.Left);
+                    keyDownController['ArrowLeft'] = true;
+                }
                 break;
             case 'ArrowRight':
                 e.preventDefault();
-                gameController.sendMovementUpdate(MoveDirection.Right);
+                if (keyDownController['ArrowRight'] == null) {
+                    gameController.sendMovementUpdate(MoveDirection.Right);
+                    keyDownController['ArrowRight'] = true;
+                }
                 break;
         }
     };
+
+    document.onkeyup = function (e) {
+        switch (e.key) {
+            case 'ArrowUp':
+                keyDownController['ArrowUp'] = null;
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                keyDownController['ArrowDown'] = null;
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                keyDownController['ArrowLeft'] = null;
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                keyDownController['ArrowRight'] = null;
+                break;
+        }
+    }
 
     function reSet() {
         onResize();
@@ -86,14 +120,20 @@
         gameController.drawSnakes();       
     }
 
-    function EnableStartButton() {
+    function EnableHostButtons() {
         if (document.getElementById("startButton") !== null) {
         document.getElementById("startButton").disabled = false;
         }
+        if (document.getElementById("SpeedBtn") !== null) {
+            document.getElementById("SpeedBtn").disabled = false;
+        }
     }
-    function DisableStartButton() {
+    function DisableHostButtons() {
         if (document.getElementById("startButton") !== null) {
         document.getElementById("startButton").disabled = true;
+        }
+        if (document.getElementById("SpeedBtn") !== null) {
+            document.getElementById("SpeedBtn").disabled = true;
         }
     }
 
@@ -124,7 +164,7 @@
             block: "start",
             inline: "start",
         });
-        DisableStartButton();
+        DisableHostButtons();
     }
 
     async function onGameEndReceived(e) {
@@ -140,7 +180,7 @@
             inline: "start",
         });
         
-        EnableStartButton();
+        EnableHostButtons();
     }
 
     function updatePlayers(players) {

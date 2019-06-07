@@ -60,10 +60,11 @@ class CustomLinkedList {
         var currNode = this.head;
 
         while (currNode !== null) {
-            array.push(currNode.element.getCopy());
+            //array.push(currNode.element.getCopy());
+            array.push(currNode.element);
             currNode = currNode.next;
         }
-        return array;
+        return array.slice();
     }
 
     print() {
