@@ -103,6 +103,16 @@ namespace SnakeMultiplayer.Services
             return body;
         }
 
+        public List<Coordinate> GetBodyList()
+        {
+            List<Coordinate> list = new List<Coordinate>(body.Count);
+            foreach(var coord in body)
+            {
+                list.Add(coord.Clone());
+            }
+            return list;
+        }
+
         public string GetColorString()
         {
             return Enum.GetName(typeof(PlayerColor), color);

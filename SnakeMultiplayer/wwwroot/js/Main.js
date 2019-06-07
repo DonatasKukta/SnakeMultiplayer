@@ -144,7 +144,7 @@
             speed = settings.speed;
             var speedBtn = document.getElementById("SpeedBtn");
             if (speedBtn !=null)
-                speedBtn.textContent = "Seep: " + speed;
+                speedBtn.textContent = "Speed: " + speed;
         }
     }
 

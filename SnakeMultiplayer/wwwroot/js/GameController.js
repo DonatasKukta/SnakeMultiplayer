@@ -74,6 +74,13 @@ class GameController {
                 var playerUpdate = message.body.players;
                 console.log("New player list: ", playerUpdate);
                 this.mainDispatcher.dispatch("onPlayerListReceived", playerUpdate);
+                var removedPlayer = message.body.removed;
+                if (removedPlayer != null) {
+
+                    this.cellContainer.clearCoords(this.snakes[removedPlayer].getBodyArray());
+                    this.snakes[removedPlayer] = null;
+                }
+
                 break;
             case "Update":
                 // Update game state

@@ -122,7 +122,14 @@ namespace SnakeMultiplayer.Services
 
         private async void CloseSocketAsync(WebSocket webSocket, WebSocketCloseStatus status)
         {
+            try
+            {
             await webSocket.CloseAsync(status, null, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                //logg
+            }
         }
 
         private async void SendMessageAsync(WebSocket webSocket, Message message)
@@ -248,7 +255,6 @@ namespace SnakeMultiplayer.Services
                     throw new ArgumentNullException("Attempt to remove player with null string.");
                 this.LobbyService.RemovePlayer(player);
                 players.TryRemove(player, out WebSocket @null);
-                this.LobbyService.SendPLayerStatusMessage();
             }
 
             public bool IsFull()

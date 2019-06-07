@@ -159,6 +159,22 @@ namespace SnakeMultiplayer.Services
             }
         }
 
+        public bool ClearSnake(string playerName)
+        {
+            if (!this.snakes.TryGetValue(playerName, out Snake snake))
+                return false;
+
+            if (snake == null)
+                return false;
+
+            foreach (var coord in snake.GetBodyList())
+            {
+                board[coord.x, coord.y] = Cells.empty;
+            }
+
+            return true;
+        }
+
         public string PrepareForNewGame()
         {
 

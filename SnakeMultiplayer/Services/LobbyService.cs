@@ -230,13 +230,16 @@ namespace SnakeMultiplayer.Services
             gameServer.SendLobbyMessage(this.ID, message);
         }
 
-        public bool RemovePlayer(string playerName)
+        public void RemovePlayer(string playerName)
         {
             // If host player is being removed, disband whole party.
             if (playerName == this.hostPlayer)
                 this.gameServer.removeLobby(this.ID);
 
-            return players.TryRemove(playerName, out Snake value);
+            arena.ClearSnake(playerName);
+            players.TryRemove(playerName, out Snake value);
+            var status = getallPlayerStatus();
+            SendLobbyMessage(new Message("server", this.ID, "Players", new { players = status, removed = playerName}));
         }
 
         private bool PlayerExists(string playerName)
