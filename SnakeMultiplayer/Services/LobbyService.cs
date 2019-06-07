@@ -66,26 +66,28 @@ namespace SnakeMultiplayer.Services
         private string InitializeGame()
         {
             // Create snakes with positions and colors
-            State = LobbyStates.inGame;
+            State = LobbyStates.Initialized;
+
+            if (arena.Speed.Equals(Speed.NoSpeed))
+            {
+                IsTimer = false;
+                timer = null;
+            }
+            else
+                IsTimer = true;
+
             string error = arena.PrepareForNewGame();
             return error;
         }
 
         private void StartTimer()
         {
-            if (arena.Speed.Equals(Speed.NoSpeed)){
-                IsTimer = false;
-                timer = null;
-            }
-            else
-            {
             IsTimer = true;
             timer = new System.Timers.Timer();
-            timer.Interval = 100 * (int)arena.Speed;
+            timer.Interval = 70 * (int)arena.Speed;
             timer.Elapsed += new System.Timers.ElapsedEventHandler(OnTimedUpdate);
             timer.AutoReset = true;
             timer.Start();
-            }
         }
 
         private async void OnTimedUpdate(object source, System.Timers.ElapsedEventArgs e)
@@ -182,11 +184,15 @@ namespace SnakeMultiplayer.Services
                         {
                             Debug.WriteLine($"Inicializuotas žaidimas {ID} lobby  ");
                             string inicializationError = InitializeGame();
-
-
+                            
                             var report = arena.GenerateReport();
                             SendLobbyMessage(new Message("server", this.ID, "Start", new {Start = report }));
-                            StartTimer(); // disable timer for debugging
+                            Task.Delay(2000).Wait();
+                            // If is timer, delay for 2 seconds and then start updating the positions
+                            if (IsTimer)
+                                StartTimer();
+
+                            State = LobbyStates.inGame;
                         }
                     break;
                     case "Players":
@@ -291,6 +297,7 @@ namespace SnakeMultiplayer.Services
     public enum LobbyStates
     {
         Idle,
+        Initialized,
         inGame,
         closed,
     }
