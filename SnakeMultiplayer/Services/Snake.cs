@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace SnakeMultiplayer.Services
 {
@@ -10,7 +9,7 @@ namespace SnakeMultiplayer.Services
         private LinkedList<Coordinate> body;
         public readonly PlayerColor color;
         public bool IsActive { get; private set; }
-        public Coordinate tail  { get; private set; }
+        public Coordinate Tail  { get; private set; }
 
     public Snake(PlayerColor color)
         {
@@ -18,7 +17,7 @@ namespace SnakeMultiplayer.Services
             this.body = new LinkedList<Coordinate>();
         }
 
-        public void setInitialPosition(Coordinate coordinate)
+        public void SetInitialPosition(Coordinate coordinate)
         {
             this.IsActive = true;
             this.body = new LinkedList<Coordinate>();
@@ -39,14 +38,14 @@ namespace SnakeMultiplayer.Services
             var newPosition = body.First.Value.Clone();
             newPosition.Update(direction);
             body.AddFirst(newPosition);
-            tail = null;
+            Tail = null;
             
             if (!isFood)
             {
-                tail = body.Last.Value.Clone();
+                Tail = body.Last.Value.Clone();
                 body.RemoveLast();
             }
-            return new Tuple<Coordinate, Coordinate>(Head(), tail);
+            return new Tuple<Coordinate, Coordinate>(Head(), Tail);
         }
         /// <summary>
         /// Check whether direction is valid.
@@ -73,7 +72,7 @@ namespace SnakeMultiplayer.Services
             return body.First.Value.Clone();
         }
 
-        public List<Coordinate> getCoordinates()
+        public List<Coordinate> GetCoordinates()
         {
             if (body == null)
                 return null;

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using JsonLibrary;
 
 namespace SnakeMultiplayer.Services
@@ -46,7 +44,7 @@ namespace SnakeMultiplayer.Services
                 else
                 {
                     var head = snake.Value.Head().ConvertToXY();
-                    var tail = snake.Value.tail == null ? null : snake.Value.tail.ConvertToXY();
+                    var tail = snake.Value.Tail?.ConvertToXY();
                     var color = snake.Value.GetColorString();
                     var tempSnake = new JsonLibrary.Snake(snake.Key, color, head, tail);
                     report.AddActiveSnake(tempSnake);
@@ -135,7 +133,7 @@ namespace SnakeMultiplayer.Services
             return new Settings(this.width, isWall, Speed.ToString());
         }
 
-        public Coordinate getInitalCoordinte(InitialPosition pos)
+        public Coordinate GetInitalCoordinte(InitialPosition pos)
         {
             if (pos.Equals(InitialPosition.UpLeft))
             {
@@ -205,10 +203,10 @@ namespace SnakeMultiplayer.Services
             {
                 player = allPlayers[i];
                 initPos = allPositions[i];
-                initCoord = getInitalCoordinte(initPos);
+                initCoord = GetInitalCoordinte(initPos);
                 if (!snakes.ContainsKey(player))
                     return false;
-                snakes[player].setInitialPosition(initCoord);
+                snakes[player].SetInitialPosition(initCoord);
 
                 pendingActions.TryAdd(player, GetMoveDirection(initPos));
             }

@@ -189,14 +189,14 @@ namespace SnakeMultiplayer.Services
             }
         }
 
-        public void removeLobby(string lobby)
+        public void RemoveLobby(string lobby)
         {
             if (lobby == null)
                 throw new ArgumentNullException("Tried to remove null lobby from lobby dictionary");
 
             if (lobbies.ContainsKey(lobby))
             {
-                lobbies[lobby].LobbyService.sendCloseLobbyMessage("Host has left the lobby.\n Please create new or join another lobby.");
+                lobbies[lobby].LobbyService.SendCloseLobbyMessage("Host has left the lobby.\n Please create new or join another lobby.");
             }
 
             lobbies.TryRemove(lobby, out Lobby value);

@@ -44,7 +44,7 @@ namespace SnakeMultiplayer.Services
                 return $"Player {playerName} already exists in lobby";
             else
             {
-                if (players.TryAdd(playerName, new Snake(getValidPlayerColor())))
+                if (players.TryAdd(playerName, new Snake(GetValidPlayerColor())))
                 {
                     return string.Empty;
                 }
@@ -132,13 +132,13 @@ namespace SnakeMultiplayer.Services
             // if no players, destroy lobby.
             else 
             {
-                gameServer.removeLobby(this.ID);
+                gameServer.RemoveLobby(this.ID);
                 return true;
             }
             
         }
 
-        public void sendCloseLobbyMessage(string reason)
+        public void SendCloseLobbyMessage(string reason)
         {
             SendLobbyMessage(new Message("server", this.ID, "Exit", new { message = reason}));
         }
@@ -152,10 +152,10 @@ namespace SnakeMultiplayer.Services
         {
             //string players = Players.Serialize(getallPlayerStatus());
 
-            return new Message("server", this.ID, "Players", new { players = getallPlayerStatus() });
+            return new Message("server", this.ID, "Players", new { players = GetallPlayerStatus() });
         }
 
-        private List<Player> getallPlayerStatus()
+        private List<Player> GetallPlayerStatus()
         {
             List<Player> list = new List<Player>(players.Count);
             foreach (var player in players)
@@ -186,7 +186,9 @@ namespace SnakeMultiplayer.Services
                             Task.Delay(2000).Wait();
                             // If is timer, delay for 2 seconds and then start updating the positions
                             if (IsTimer)
+                            {
                                 StartTimer();
+                            }
 
                             State = LobbyStates.inGame;
                         }
@@ -234,11 +236,11 @@ namespace SnakeMultiplayer.Services
         {
             // If host player is being removed, disband whole party.
             if (playerName == this.hostPlayer)
-                this.gameServer.removeLobby(this.ID);
+                this.gameServer.RemoveLobby(this.ID);
 
             arena.ClearSnake(playerName);
             players.TryRemove(playerName, out Snake value);
-            var status = getallPlayerStatus();
+            var status = GetallPlayerStatus();
             SendLobbyMessage(new Message("server", this.ID, "Players", new { players = status, removed = playerName}));
         }
 
@@ -264,7 +266,7 @@ namespace SnakeMultiplayer.Services
             //return players.Count > 0 ? true : false; 
         }
 
-        private PlayerColor getValidPlayerColor()
+        private PlayerColor GetValidPlayerColor()
         {
             var players = this.players.Values.ToList();
             var takenColors = players.Select(p => p.color).ToList();
