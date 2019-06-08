@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using JsonLibrary;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace SnakeMultiplayer.Services
 {
@@ -202,6 +203,17 @@ namespace SnakeMultiplayer.Services
             lobbies.TryRemove(lobby, out Lobby value);
         }
 
+        public List<Tuple<string, string>> GetLobbyStatus()
+        {
+            var lobbyList = new List<Tuple<string, string>>(lobbies.Count);
+
+            foreach(var pair in lobbies)
+            {
+                lobbyList.Add(new Tuple<string, string>(pair.Key, pair.Value.GetPlayerCount().ToString()));
+            }
+            return lobbyList;
+        }
+
         // Implement locks on modification methods?
         private class Lobby
         {
@@ -212,6 +224,11 @@ namespace SnakeMultiplayer.Services
             {
                 this.players = new ConcurrentDictionary<string, WebSocket>();
                 this.LobbyService = new LobbyService(name, hostName, maxPlayers, gameServer);
+            }
+
+            public int GetPlayerCount()
+            {
+                return this.LobbyService.getPlayerCount();
             }
 
             public string AddPlayer(string playerName, WebSocket webSocket)

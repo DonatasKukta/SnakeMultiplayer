@@ -85,6 +85,14 @@ namespace SnakeMultiplayer.Controllers
             }
         }
 
+        [HttpGet]
+        public IActionResult Status([FromServices] GameServerService gameServer)
+        {
+            ViewData["Lobbies"] = gameServer.GetLobbyStatus();
+
+            return View();
+        }
+
         private static string IsValid(string lobbyName, string playerName)
         {
             if (String.IsNullOrEmpty(playerName))

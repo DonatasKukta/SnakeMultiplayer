@@ -36,6 +36,11 @@ namespace SnakeMultiplayer.Services
             IsTimer = false;
         }
 
+        public int getPlayerCount()
+        {
+            return this.players.Count();
+        }
+
         public string AddPlayer(string playerName)
         {
             if (IsLobbyFull())
