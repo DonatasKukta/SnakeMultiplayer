@@ -1,17 +1,41 @@
-﻿using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-namespace SnakeMultiplayer
+using SnakeMultiplayer;
+using SnakeMultiplayer.Services;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddMvc(o => o.EnableEndpointRouting = false);
+
+builder.Services.Configure<CookiePolicyOptions>(options =>
 {
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            CreateWebHostBuilder(args).Build().Run();
-        }
+    options.CheckConsentNeeded = context => true;
+    options.MinimumSameSitePolicy = SameSiteMode.None;
+});
+builder.Services.AddSingleton<GameServerService>();
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>();
-    }
+var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
 }
+
+app.UseWebSockets();
+app.UseMiddleware<WebSocketMiddleware>();
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseMvc(routes =>
+{
+    routes.MapRoute(
+        name: "default",
+        template: "{controller=Home}/{action=Index}/{id?}");
+});
+
+app.Run();
