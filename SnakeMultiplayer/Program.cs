@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-using SnakeMultiplayer;
+using SnakeMultiplayer.Middlewares;
 using SnakeMultiplayer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,8 +21,8 @@ var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
-    app.UseHsts();
+    _ = app.UseExceptionHandler("/Error");
+    _ = app.UseHsts();
 }
 
 app.UseWebSockets();
@@ -33,7 +33,7 @@ app.UseStaticFiles();
 
 app.UseMvc(routes =>
 {
-    routes.MapRoute(
+    _ = routes.MapRoute(
         name: "default",
         template: "{controller=Home}/{action=Index}/{id?}");
 });
