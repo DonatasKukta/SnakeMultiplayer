@@ -5,12 +5,13 @@ using SnakeMultiplayer.Services;
 
 namespace SnakeMultiplayer.Controllers;
 
-//[Route("Lobby")]
 public class LobbyController : Controller
 {
     private static readonly string InvalidStringErrorMessage = @"Please use only letters, numbers and spaces only between words. ";
+
     [HttpGet]
     public IActionResult Index() => View("Views/Lobby/CreateLobby.cshtml");
+
     [HttpGet]
     public IActionResult CreateLobby() => View();
 
@@ -27,8 +28,7 @@ public class LobbyController : Controller
             return View();
         }
 
-        var success = gameServer.TryCreateLobby(id, playerName, gameServer);
-        if (success)
+        if (gameServer.TryCreateLobby(id, playerName, gameServer))
         {
             SetCookie("PlayerName", playerName);
             SetCookie("LobbyId", id);
@@ -37,7 +37,7 @@ public class LobbyController : Controller
         }
 
         ViewData["ErrorMessage"] = $"Lobby with {id} already exists. Please enter different name";
-        //return View("Views/Lobby/CreateLobby.cshtml");
+
         return View();
     }
 
@@ -48,7 +48,6 @@ public class LobbyController : Controller
         return View();
     }
 
-    //[HttpPost("/JoinLobby/{playerName}/{id}")]
     [HttpPost]
     public IActionResult JoinLobby([FromServices] GameServerService gameServer, string id = "", string playerName = "")
     {
@@ -63,7 +62,7 @@ public class LobbyController : Controller
         }
 
         errorMessage = gameServer.CanJoin(id, playerName);
-        if (errorMessage.Equals(string.Empty))
+        if (string.IsNullOrEmpty(errorMessage))
         {
             SetCookie("PlayerName", playerName);
             SetCookie("LobbyId", id);
@@ -84,15 +83,16 @@ public class LobbyController : Controller
         return View();
     }
 
-    private static string IsValid(string lobbyName, string playerName) => string.IsNullOrEmpty(playerName)
+    private static string IsValid(string lobbyName, string playerName) =>
+        string.IsNullOrEmpty(playerName)
             ? "Please enter your player name"
-            : string.IsNullOrEmpty(lobbyName)
-                ? "Please enter lobby name"
-                : !GameServerService.ValidStringRegex.IsMatch(playerName)
-                                ? "Player name is incorrect.\n" + InvalidStringErrorMessage
-                                : !GameServerService.ValidStringRegex.IsMatch(lobbyName)
-                                                ? "Lobby name is incorrect.\n" + InvalidStringErrorMessage
-                                                : string.Empty;
+        : string.IsNullOrEmpty(lobbyName)
+            ? "Please enter lobby name"
+        : !GameServerService.ValidStringRegex.IsMatch(playerName)
+            ? "Player name is incorrect.\n" + InvalidStringErrorMessage
+        : !GameServerService.ValidStringRegex.IsMatch(lobbyName)
+            ? "Lobby name is incorrect.\n" + InvalidStringErrorMessage
+        : string.Empty;
 
     private void SetCookie(string name, string value)
     {

@@ -40,13 +40,14 @@ public class LobbyService
         IsTimer = false;
     }
 
-    public int getPlayerCount() => players.Count();
-
-    public string AddPlayer(string playerName) => IsLobbyFull()
+    public string AddPlayer(string playerName) =>
+        IsLobbyFull()
             ? "Lobby is full."
-            : PlayerExists(playerName)
-                ? $"Player {playerName} already exists in lobby"
-                : players.TryAdd(playerName, new Snake(GetValidPlayerColor())) ? string.Empty : "An error has occured. Please try again later.";
+        : PlayerExists(playerName)
+            ? $"Player {playerName} already exists in lobby"
+        : players.TryAdd(playerName, new Snake(GetValidPlayerColor()))
+            ? string.Empty
+        : "An error has occured. Please try again later.";
 
     private void EndGame()
     {
@@ -56,7 +57,6 @@ public class LobbyService
 
     private string InitializeGame()
     {
-        // Create snakes with positions and colors
         State = LobbyStates.Initialized;
 
         if (arena.Speed.Equals(Speed.NoSpeed))
@@ -87,13 +87,9 @@ public class LobbyService
 
     private void OnTimedUpdate(object source, System.Timers.ElapsedEventArgs e)
     {
-
-        // update new status
         arena.UpdateActions();
 
-        var isEnd = IsGameEnd();
-        // Chech if game has ended
-        if (isEnd)
+        if (IsGameEnd())
         {
             SendLobbyMessage(new Message("server", ID, "End", null));
             if (timer != null)
@@ -102,33 +98,25 @@ public class LobbyService
                 timer.Dispose();
             }
             State = LobbyStates.Idle;
+            return;
         }
-        else
-        {
-            // generate new arena status
-            var report = arena.GenerateReport();
-            // send lobby message
-            SendLobbyMessage(new Message("server", ID, "Update", new { status = report }));
-        }
+
+        SendLobbyMessage(new Message("server", ID, "Update", new { status = arena.GenerateReport() }));
     }
 
     private bool IsGameEnd()
     {
         var playerCount = players.Count();
-        // If multiple player, stop when one player is left active.
         if (1 < playerCount)
         {
             var activeCount = players.Values.Select(p => p.IsActive).Where(IsActive => IsActive == true).Count();
             return activeCount <= 1;
         }
-        // if solo player, end only if snake is deactivated.
         else if (playerCount == 1)
         {
-            //var tmp = players.Values.Select(p => p.IsActive == true).Count();
             var activeCount = players.Values.Select(p => p.IsActive).Where(IsActive => IsActive == true).Count();
             return activeCount <= 0;
         }
-        // if no players, destroy lobby.
         else
         {
             gameServer.RemoveLobby(ID);
@@ -136,6 +124,7 @@ public class LobbyService
         }
     }
 
+    public int GetPlayerCount() => players.Count();
     public void SendCloseLobbyMessage(string reason) => SendLobbyMessage(new Message("server", ID, "Exit", new { message = reason }));
     public void SendPLayerStatusMessage()
     {
@@ -144,8 +133,6 @@ public class LobbyService
     }
 
     private Message CreatePlayerStatusMessage() =>
-        //string players = Players.Serialize(getallPlayerStatus());
-
         new("server", ID, "Players", new { players = GetallPlayerStatus() });
 
     private List<Player> GetallPlayerStatus()
@@ -173,13 +160,13 @@ public class LobbyService
                 case "Start":
                     if (message.sender.Equals(hostPlayer) && State.Equals(LobbyStates.Idle))
                     {
-                        Debug.WriteLine($"Inicializuotas žaidimas {ID} lobby  ");
+                        Debug.WriteLine($"Game initialised in {ID} lobby.");
                         var inicializationError = InitializeGame();
 
                         var report = arena.GenerateReport();
                         SendLobbyMessage(new Message("server", ID, "Start", new { Start = report }));
                         Task.Delay(2000).Wait();
-                        // If is timer, delay for 2 seconds and then start updating the positions
+
                         if (IsTimer)
                         {
                             StartTimer();
@@ -194,13 +181,12 @@ public class LobbyService
                 case "Settings":
                     if (message.sender.Equals(hostPlayer))
                     {
-                        //Debug.WriteLine("Gauti settings:" + message.body.ToString());
                         var settings = Settings.Deserialize(message.body);
                         settings = arena.SetSettings(settings);
                         SendLobbyMessage(new Message("server", ID, "Settings", new { Settings = settings }));
                     }
                     break;
-                case "Update": // updating only while in game
+                case "Update":
                     if (!State.Equals(LobbyStates.inGame))
                     {
                         break;
@@ -209,14 +195,13 @@ public class LobbyService
                     var direction = (MoveDirection)message.body;
                     arena.SetPendingAction(message.sender, direction);
 
-                    // if speed is set to no speed, update on each player movement.
                     if (!IsTimer)
                     {
                         OnTimedUpdate(null, null);
                     }
 
                     break;
-                default: //echo
+                default:
                     Debug.WriteLine($"---Unexpected message from {message.sender}, content: {message.body.ToString()}");
                     break;
             }
@@ -231,7 +216,6 @@ public class LobbyService
 
     public void RemovePlayer(string playerName)
     {
-        // If host player is being removed, disband whole party.
         if (playerName == hostPlayer)
         {
             gameServer.RemoveLobby(ID);
@@ -257,7 +241,8 @@ public class LobbyService
 
     public bool IsLobbyFull() => maxPlayers <= players.Count;
 
-    public bool IsActive() => true;// Take into account time of existance.//return players.Count > 0 ? true : false; 
+    //TODO: Implement; take into account time of existance. // => players.Count > 0; 
+    public bool IsActive() => true;
 
     private PlayerColor GetValidPlayerColor()
     {
@@ -275,20 +260,4 @@ public class LobbyService
 
         throw new InvalidOperationException("Cannot find unused player color, because all are used.");
     }
-}
-
-public enum PlayerColor
-{
-    greenyellow,
-    dodgerblue,
-    orange,
-    mediumpurple,
-}
-
-public enum LobbyStates
-{
-    Idle,
-    Initialized,
-    inGame,
-    closed,
 }

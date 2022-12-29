@@ -10,8 +10,6 @@ using System.Threading.Tasks;
 
 using JsonLibrary;
 
-using Microsoft.Extensions.Hosting;
-
 namespace SnakeMultiplayer.Services;
 
 /// <summary>
@@ -19,22 +17,14 @@ namespace SnakeMultiplayer.Services;
 /// Distributes incoming messages to relevant lobbies and 
 /// forwads messages from lobbies to web sockets
 /// </summary>
-public class GameServerService : IHostedService
+public class GameServerService
 {
+    //TODO: Move to constants
     public static Regex ValidStringRegex = new(@"^[a-zA-Z0-9]+[a-zA-Z0-9\s_]*[a-zA-Z0-9]+$");
-    /// <summary>
-    /// Represents lobbies and its players, with which server is communicating
-    /// </summary>
-    private readonly ConcurrentDictionary<string, Lobby> lobbies = new();
+    readonly int WebSocketMessageBufferSize = 1024 * 4;
+    readonly int MaxPlayersInLobby = 4;
 
-    /// <summary>
-    /// Represents the buffer length, in which received messages from web sockets will be stored.
-    /// </summary>
-    private readonly int bufferSize = 1024 * 4; // Get this value from app settings
-    private readonly int maxPlayers = 4;
-
-    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    readonly ConcurrentDictionary<string, Lobby> lobbies = new();
 
     private string AddPlayerToLobby(string lobby, string player, WebSocket socket)
     {
@@ -96,16 +86,13 @@ public class GameServerService : IHostedService
 
             lobbies[lobby].LobbyService.SendPLayerStatusMessage();
 
-            // While current player is in lobby
             while (lobbies[lobby].PlayerExists(playerName))
             {
-                //message = await ReceiveMessageAsync(webSocket);
-                var buffer = new byte[bufferSize];
+                var buffer = new byte[WebSocketMessageBufferSize];
                 var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 if (result.CloseStatus.HasValue)
                 {
-                    // log 
-                    Debug.WriteLine($"Žaidėjas {playerName} nutruakė ryšį");
+                    Debug.WriteLine($"Player {playerName} disconnected from lobby {lobby}.");
                     break;
                 }
                 var receivedMessage = Strings.getString(buffer);
@@ -116,14 +103,13 @@ public class GameServerService : IHostedService
         }
         catch (Exception)
         {
-            // Unexpected error! try again pls
-            // log exception                
+            // TODO: Handle
         }
         finally
         {
-            // remove player from this.lobbies and lobby.players
+
             lobbies[lobby].RemovePlayer(playerName);
-            // close socket
+
             if (webSocket.State != WebSocketState.Closed)
             {
                 CloseSocketAsync(webSocket, closeStatus);
@@ -139,7 +125,7 @@ public class GameServerService : IHostedService
         }
         catch (Exception)
         {
-            //logg
+            // TODO: Handle
         }
     }
 
@@ -152,31 +138,37 @@ public class GameServerService : IHostedService
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Could not send message: {message.lobby}, of type {message.type}. Error: {ex.Message}");
+            // TODO: Handle
+            Debug.WriteLine($"Could not send to lobby {message.lobby}, of type {message.type}. Error: {ex.Message}");
         }
     }
 
     private async Task<Message> ReceiveMessageAsync(WebSocket webSocket)
     {
-        var buffer = new byte[bufferSize];
+        var buffer = new byte[WebSocketMessageBufferSize];
         _ = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
         var text = Strings.getString(buffer);
         return Message.Deserialize(text);
     }
 
-    public bool TryCreateLobby(string lobbyName, string hostPlayerName, GameServerService service) => lobbies.TryAdd(lobbyName, new Lobby(lobbyName, hostPlayerName, maxPlayers, service));
+    public bool TryCreateLobby(string lobbyName, string hostPlayerName, GameServerService service)
+        => lobbies.TryAdd(lobbyName, new Lobby(lobbyName, hostPlayerName, MaxPlayersInLobby, service));
 
-    public string CanJoin(string lobbyName, string playerName) => !lobbies.TryGetValue(lobbyName, out var lobby)
+    public string CanJoin(string lobbyName, string playerName) =>
+        !lobbies.TryGetValue(lobbyName, out var lobby)
             ? $"Lobby {lobbyName} does not exist. Please try a different name"
-            : !lobby.IsActive()
-                ? $"Lobby {lobbyName} is not active, therefore you cannot join it."
-                : lobby.IsFull()
-                                ? $"Lobby {lobbyName} is full. Please try again later."
-                                : lobby.PlayerExists(playerName) ? $"Name {playerName} is already taken. Please use another name." : string.Empty;
+        : !lobby.IsActive()
+            ? $"Lobby {lobbyName} is not active, therefore you cannot join it."
+        : lobby.IsFull()
+            ? $"Lobby {lobbyName} is full. Please try again later."
+        : lobby.PlayerExists(playerName)
+            ? $"Name {playerName} is already taken. Please use another name." : string.Empty;
 
     public bool LobbyExists(string lobbyName) => lobbies.ContainsKey(lobbyName);
 
-    public bool PlayerExists(string lobbyName, string playerName) => lobbies.TryGetValue(lobbyName, out var current)
+    public bool PlayerExists(string lobbyName, string playerName) =>
+        lobbies.TryGetValue(lobbyName, out var current)
             ? current.PlayerExists(playerName)
             : throw new EntryPointNotFoundException($"Lobby {lobbyName} does not exists");
 
@@ -206,10 +198,10 @@ public class GameServerService : IHostedService
         return lobbyList;
     }
 
-    // Implement locks on modification methods?
+    //TODO: Refactor
     private class Lobby
     {
-        private readonly ConcurrentDictionary<string, WebSocket> players;
+        readonly ConcurrentDictionary<string, WebSocket> players;
         public LobbyService LobbyService { get; private set; }
 
         public Lobby(string name, string hostName, int maxPlayers, GameServerService gameServer)
@@ -218,7 +210,7 @@ public class GameServerService : IHostedService
             LobbyService = new LobbyService(name, hostName, maxPlayers, gameServer);
         }
 
-        public int GetPlayerCount() => LobbyService.getPlayerCount();
+        public int GetPlayerCount() => LobbyService.GetPlayerCount();
 
         public string AddPlayer(string playerName, WebSocket webSocket)
         {
@@ -248,17 +240,15 @@ public class GameServerService : IHostedService
             if (!players.TryAdd(playerName, webSocket))
             {
                 LobbyService.RemovePlayer(playerName);
-                // log
                 return $"Unexpected error while trying to join {LobbyService.ID}. Please try again later";
             }
             return string.Empty;
         }
 
-        public WebSocket[] GetPlayersWebSockets() => players.Values.ToArray();
 
         public bool PlayerExists(string playerName) => playerName == null
-                ? throw new ArgumentNullException("Attempt to check existance of player with null string.")
-                : players.ContainsKey(playerName);
+            ? throw new ArgumentNullException("Attempt to check existance of player with null string.")
+            : players.ContainsKey(playerName);
 
         public void RemovePlayer(string player)
         {
@@ -271,6 +261,7 @@ public class GameServerService : IHostedService
             _ = players.TryRemove(player, out _);
         }
 
+        public WebSocket[] GetPlayersWebSockets() => players.Values.ToArray();
         public bool IsFull() => LobbyService.IsLobbyFull();
         public bool IsActive() => LobbyService.IsActive();
     }

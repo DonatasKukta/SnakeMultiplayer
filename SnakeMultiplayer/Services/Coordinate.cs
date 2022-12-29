@@ -6,45 +6,36 @@ namespace SnakeMultiplayer.Services;
 
 public class Coordinate
 {
-    public int x { get; private set; }
-    public int y { get; private set; }
+    public int X { get; private set; }
+    public int Y { get; private set; }
 
     public Coordinate() { }
 
     public Coordinate(int x, int y)
     {
-        this.x = x;
-        this.y = y;
+        X = x;
+        Y = y;
     }
-
-    public Coordinate Clone() => new(x, y);
-
-    public XY ConvertToXY() => new(x, y);
 
     public void Update(MoveDirection direction)
     {
-        switch (direction)
+        _ = direction switch
         {
-            case MoveDirection.Up:
-                y -= 1;
-                break;
-            case MoveDirection.Right:
-                x += 1;
-                break;
-            case MoveDirection.Down:
-                y += 1;
-                break;
-            case MoveDirection.Left:
-                x -= 1;
-                break;
-            case MoveDirection.None:
-            default:
-                throw new ArgumentException($"Argument value of enum CoordDirection expected, but {direction} found");
-        }
+            MoveDirection.Up => Y -= 1,
+            MoveDirection.Right => X += 1,
+            MoveDirection.Down => Y += 1,
+            MoveDirection.Left => X -= 1,
+            _ => throw new ArgumentException($"Argument value of enum CoordDirection expected, but {direction} found")
+        };
     }
-    public (int, int) Get() => (x, y);
 
-    public override string ToString() => string.Format($"{x}:{y};");
+    public XY ConvertToXY() => new(X, Y);
+
+    public Coordinate Clone() => new(X, Y);
+
+    public (int, int) Get() => (X, Y);
+
+    public override string ToString() => string.Format($"{X}:{Y};");
 
     public override bool Equals(object obj)
     {
@@ -54,18 +45,8 @@ public class Coordinate
         }
 
         var other = (Coordinate)obj;
-        return (x == other.x) && (y == other.y);
+        return (X == other.X) && (Y == other.Y);
     }
 
-    public override int GetHashCode() => (x << 2) ^ y;
-
-}
-
-public enum MoveDirection
-{
-    None = 0,
-    Up = 1,
-    Right = 2,
-    Down = 3,
-    Left = 4,
+    public override int GetHashCode() => (X << 2) ^ Y;
 }

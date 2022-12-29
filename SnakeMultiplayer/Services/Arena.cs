@@ -7,33 +7,33 @@ using JsonLibrary.FromServer;
 
 namespace SnakeMultiplayer.Services;
 
-/// <summary>
-/// Lobby object represents an environment of a single game arena instance
-/// </summary>
 public class Arena
 {
-    protected Cells[,] board;
-    protected ConcurrentDictionary<string, Snake> snakes;
-    protected ConcurrentDictionary<string, MoveDirection> pendingActions;
-    protected ConcurrentDictionary<string, MoveDirection> lastActions;
-    protected int width;
-    protected int height;
-    protected bool isWall;
-    protected Coordinate food;
-    protected Random rnd = new(Guid.NewGuid().GetHashCode());
-    public Speed Speed { get; protected set; }
+    public Speed Speed { get; private set; }
+
+    readonly Random Random = new(Guid.NewGuid().GetHashCode());
+    readonly ConcurrentDictionary<string, Snake> Snakes;
+    readonly ConcurrentDictionary<string, MoveDirection> PendingActions;
+
+    ConcurrentDictionary<string, MoveDirection> PreviousActions;
+    Cells[,] Board;
+    int Width;
+    int Height;
+    bool IsWall;
+    Coordinate Food;
 
     public Arena(ConcurrentDictionary<string, Snake> players)
     {
-        snakes = players;
-        pendingActions = new ConcurrentDictionary<string, MoveDirection>();
-        food = null;
+        Snakes = players;
+        PendingActions = new ConcurrentDictionary<string, MoveDirection>();
+        Food = null;
         Speed = Speed.Normal;
     }
+
     public ArenaStatus GenerateReport()
     {
-        var report = new ArenaStatus(food == null ? null : new XY(food.x, food.y));
-        foreach (var snake in snakes)
+        var report = new ArenaStatus(Food == null ? null : new XY(Food.X, Food.Y));
+        foreach (var snake in Snakes)
         {
             if (snake.Value == null)
             {
@@ -45,7 +45,7 @@ public class Arena
             }
             else
             {
-                var head = snake.Value.Head().ConvertToXY();
+                var head = snake.Value.CloneHead().ConvertToXY();
                 var tail = snake.Value.Tail?.ConvertToXY();
                 var color = snake.Value.GetColorString();
                 var tempSnake = new JsonLibrary.FromServer.Snake(snake.Key, color, head, tail);
@@ -58,28 +58,27 @@ public class Arena
     // Inefficient. 
     // TODO: get random coordinates and use breath-first search algorithm 
     // to find nearest empty cell.
-    // Randomly generates food at new location
     /// <summary>
-    /// If needed, generates food at random location,saves food location to board.
+    /// If needed, generates food at random location in the board.
     /// </summary>
     /// <param name="force">If true, generates food even if its nulll</param>
     public void GenerateFood(bool force)
     {
-        if (force || food != null)
+        if (force || Food != null)
         {
             return;
         }
 
-        food = null;
-        _ = new Coordinate(rnd.Next(0, width), rnd.Next(0, height));
+        Food = null;
+        _ = new Coordinate(Random.Next(0, Width), Random.Next(0, Height));
         var isFoodSet = false;
         bool contains;
 
         while (!isFoodSet)
         {
-            var newFood = new Coordinate(rnd.Next(0, width), rnd.Next(0, height));
+            var newFood = new Coordinate(Random.Next(0, Width), Random.Next(0, Height));
             contains = false;
-            foreach (var snake in snakes.Values)
+            foreach (var snake in Snakes.Values)
             {
                 if (snake.Contains(newFood))
                 {
@@ -89,12 +88,12 @@ public class Arena
             }
             if (!contains)
             {
-                food = newFood;
-                board[newFood.x, newFood.y] = Cells.food;
+                Food = newFood;
+                Board[newFood.X, newFood.Y] = Cells.food;
                 return;
             }
         }
-        // Zaidejas laimejo??? handle this. isvengti infinite loop
+        //TODO: Player won? Refactor to better logic.
         throw new Exception("Could not set food");
     }
 
@@ -108,50 +107,38 @@ public class Arena
         // Consider Speed Setting
         if (settings.cellCount != 0)
         {
-            width = settings.cellCount;
-            height = settings.cellCount;
+            Width = settings.cellCount;
+            Height = settings.cellCount;
         }
         if (settings.isWall != null)
         {
-            isWall = true;
+            IsWall = true;
 
         }
-        if (!string.IsNullOrEmpty(settings.speed))
+
+        //TODO: this shouldn't be here.
+        if (Enum.TryParse(settings?.speed, out Speed parsedSpeed))
         {
-            if (settings.speed.Equals("NoSpeed"))
-            {
-                Speed = Speed.NoSpeed;
-            }
-            else if (settings.speed.Equals("Slow"))
-            {
-                Speed = Speed.Slow;
-            }
-            else if (settings.speed.Equals("Normal"))
-            {
-                Speed = Speed.Normal;
-            }
-            else if (settings.speed.Equals("Fast"))
-            {
-                Speed = Speed.Fast;
-            }
+            Speed = parsedSpeed;
         }
 
-        return new Settings(width, isWall, Speed.ToString());
+        return new Settings(Width, IsWall, Speed.ToString());
     }
 
-    public Coordinate GetInitalCoordinte(InitialPosition pos) => pos.Equals(InitialPosition.UpLeft)
+    public Coordinate GetInitalCoordinte(InitialPosition pos) =>
+        pos.Equals(InitialPosition.UpLeft)
             ? new Coordinate(1, 1)
-            : pos.Equals(InitialPosition.UpRight)
-                ? new Coordinate(width - 2, 1)
-                : pos.Equals(InitialPosition.DownLeft)
-                                ? new Coordinate(1, height - 2)
-                                : pos.Equals(InitialPosition.DownRight)
-                                                ? new Coordinate(width - 2, height - 2)
-                                                : throw new ArgumentException($" Invalid initial position {pos}");
+        : pos.Equals(InitialPosition.UpRight)
+            ? new Coordinate(Width - 2, 1)
+        : pos.Equals(InitialPosition.DownLeft)
+            ? new Coordinate(1, Height - 2)
+        : pos.Equals(InitialPosition.DownRight)
+            ? new Coordinate(Width - 2, Height - 2)
+        : throw new ArgumentException($" Invalid initial position {pos}");
 
     public bool ClearSnake(string playerName)
     {
-        if (!snakes.TryGetValue(playerName, out var snake))
+        if (!Snakes.TryGetValue(playerName, out var snake))
         {
             return false;
         }
@@ -163,7 +150,7 @@ public class Arena
 
         foreach (var coord in snake.GetBodyList())
         {
-            board[coord.x, coord.y] = Cells.empty;
+            Board[coord.X, coord.Y] = Cells.empty;
         }
 
         return true;
@@ -171,16 +158,13 @@ public class Arena
 
     public string PrepareForNewGame()
     {
+        Board = new Cells[Width, Height];
 
-        // create new board of cells
-        board = new Cells[width, height];
-        // set initial positions for snakes and next pending positions
         if (!SetInitialPositionsAndActions())
         {
             return "Could not set initial positions";
         }
-        // set food
-        food = null;
+
         GenerateFood(true);
 
         return string.Empty;
@@ -188,11 +172,9 @@ public class Arena
 
     private bool SetInitialPositionsAndActions()
     {
-
-        // Delete all pending actions
-        pendingActions.Clear();
+        PendingActions.Clear();
         var allPositions = Enum.GetValues(typeof(InitialPosition)).Cast<InitialPosition>().ToArray();
-        var allPlayers = snakes.Keys.ToArray();
+        var allPlayers = Snakes.Keys.ToArray();
         string player;
         InitialPosition initPos;
         Coordinate initCoord;
@@ -202,156 +184,109 @@ public class Arena
             player = allPlayers[i];
             initPos = allPositions[i];
             initCoord = GetInitalCoordinte(initPos);
-            if (!snakes.ContainsKey(player))
+            if (!Snakes.ContainsKey(player))
             {
                 return false;
             }
 
-            snakes[player].SetInitialPosition(initCoord);
+            Snakes[player].SetInitialPosition(initCoord);
 
-            _ = pendingActions.TryAdd(player, GetMoveDirection(initPos));
+            _ = PendingActions.TryAdd(player, GetMoveDirection(initPos));
         }
-        // creates shallow copy! each lasAction.Value references relevant pendingActions.Value
-        lastActions = new ConcurrentDictionary<string, MoveDirection>(pendingActions);
+
+        PreviousActions = new ConcurrentDictionary<string, MoveDirection>(PendingActions);
         return true;
     }
 
     public void UpdateActions()
     {
-        CheckPendingActions();
+        RefreshPendingActions();
 
-        foreach (var snake in snakes)
+        foreach (var snake in Snakes)
         {
             if (snake.Value == null || !snake.Value.IsActive)
             {
                 continue;
             }
 
-            if (!pendingActions.TryGetValue(snake.Key, out var currAction))
+            if (!PendingActions.TryGetValue(snake.Key, out var currAction))
             {
                 continue;
             }
 
-            //var currAction = pendingActions[snake.Key];
-            var newHead = snake.Value.Head();
+            var newHead = snake.Value.CloneHead();
             newHead.Update(currAction);
-            //TODO: implement support of no wall.
-            if (newHead.x < 0 || width <= newHead.x || newHead.y < 0 || width <= newHead.y)
+
+            if (newHead.X < 0 || Width <= newHead.X || newHead.Y < 0 || Width <= newHead.Y)
             {
                 snake.Value.Deactivate();
                 continue;
             }
 
             Tuple<Coordinate, Coordinate> moveResult;
-            if (board[newHead.x, newHead.y].Equals(Cells.empty))
+            if (Board[newHead.X, newHead.Y].Equals(Cells.empty))
             {
                 moveResult = snake.Value.Move(currAction, false);
             }
-            else if (board[newHead.x, newHead.y].Equals(Cells.food))
+            else if (Board[newHead.X, newHead.Y].Equals(Cells.food))
             {
-                food = null;
+                Food = null;
                 moveResult = snake.Value.Move(currAction, true);
             }
-            else //if (board[newHead.x, newHead.y].Equals(Cells.snake))
+            else
             {
                 snake.Value.Deactivate();
                 continue;
             }
+
             if (moveResult == null)
             {
                 continue;
             }
 
-            board[moveResult.Item1.x, moveResult.Item1.y] = Cells.snake;
+            Board[moveResult.Item1.X, moveResult.Item1.Y] = Cells.snake;
             if (moveResult.Item2 != null)
             {   // snake tail must be removed
-                board[moveResult.Item2.x, moveResult.Item2.y] = Cells.empty;
+                Board[moveResult.Item2.X, moveResult.Item2.Y] = Cells.empty;
             }
         }
         GenerateFood(false);
     }
 
-    /// <summary>
-    ///  Error free
-    /// </summary>
-    /// <param name="player"></param>
-    /// <param name="direction"></param>
     public void SetPendingAction(string player, MoveDirection direction)
     {
-        if (pendingActions.TryGetValue(player, out var currDirection))
+        if (PendingActions.TryGetValue(player, out var currDirection))
         {
-            _ = pendingActions.TryUpdate(player, direction, currDirection);
+            _ = PendingActions.TryUpdate(player, direction, currDirection);
         }
     }
 
     /// <summary>
     /// Sets current pending actions to snakes
     /// </summary>
-    private void CheckPendingActions()
+    private void RefreshPendingActions()
     {
-        foreach (var snake in snakes)
+        foreach (var snake in Snakes)
         {
             // check if action is valid (get head and update and check
-            var currentPendingAction = pendingActions[snake.Key];
-            // if current action is not valid, set to last action. The very first action is alawyas valid.
-            if (!snake.Value.IsDirectionNotToSelf(currentPendingAction))
+            var currentPendingAction = PendingActions[snake.Key];
+            // if current action is not valid, set to last action. The very first action is always valid.
+            if (snake.Value.IsDirectionToSelf(currentPendingAction))
             {
-                pendingActions[snake.Key] = lastActions[snake.Key];
+                PendingActions[snake.Key] = PreviousActions[snake.Key];
             }
         }
-        // save current actions
-        lastActions = new ConcurrentDictionary<string, MoveDirection>(pendingActions);
+
+        PreviousActions = new ConcurrentDictionary<string, MoveDirection>(PendingActions);
     }
 
-    private void ClearPendingActions()
-    {
-        // Set last action to be next action
-    }
-
-    public static MoveDirection GetMoveDirection(InitialPosition pos)
-    {
-        if (pos.Equals(InitialPosition.UpLeft))
+    public static MoveDirection GetMoveDirection(InitialPosition pos) =>
+        pos switch
         {
-            return MoveDirection.Down;
-        }
-        else if (pos.Equals(InitialPosition.UpRight))
-        {
-            return MoveDirection.Left;
-        }
-        else if (pos.Equals(InitialPosition.DownLeft))
-        {
-            return MoveDirection.Right;
-        }
-        else if (pos.Equals(InitialPosition.DownRight))
-        {
-            return MoveDirection.Up;
-        }
-        else
-        {
-            // log error
-            return MoveDirection.None;
-        }
-    }
-}
-public enum Speed
-{
-    NoSpeed = 0,
-    Fast = 1,
-    Normal = 2,
-    Slow = 3
-}
-
-public enum InitialPosition
-{
-    UpLeft,
-    UpRight,
-    DownLeft,
-    DownRight,
-}
-
-public enum Cells
-{
-    empty = 0,
-    food = 1,
-    snake = 2
+            InitialPosition.UpLeft => MoveDirection.Down,
+            InitialPosition.UpRight => MoveDirection.Left,
+            InitialPosition.DownLeft => MoveDirection.Right,
+            InitialPosition.DownRight => MoveDirection.Up,
+            _ => MoveDirection.None,
+        };
 }

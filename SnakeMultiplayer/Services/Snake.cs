@@ -47,28 +47,28 @@ public class Snake
             Tail = body.Last.Value.Clone();
             body.RemoveLast();
         }
-        return new Tuple<Coordinate, Coordinate>(Head(), Tail);
+        return new Tuple<Coordinate, Coordinate>(CloneHead(), Tail);
     }
     /// <summary>
     /// Check whether direction is valid.
     /// (Snake always can not move backwards).
     /// </summary>
-    /// <param name="direction"></param>
-    /// <returns></returns>
-    public bool IsDirectionNotToSelf(MoveDirection direction)
+    public bool IsDirectionToSelf(MoveDirection direction)
     {
         if (body == null || body.Count <= 1)
         {
-            return true;
+            return false;
         }
 
-        var head = Head();
+        var head = CloneHead();
         head.Update(direction);
-        return !body.First.Next.Value.Equals(head);
-
+        return body.First.Next.Value.Equals(head);
     }
 
-    public Coordinate Head() => body == null || body.First.Value == null ? null : body.First.Value.Clone();
+    public Coordinate CloneHead() =>
+        body == null || body.First.Value == null
+        ? null
+        : body.First.Value.Clone();
 
     public List<Coordinate> GetCoordinates() => body?.ToList<Coordinate>();
 
