@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Timers;
 
 using JsonLibrary;
 using JsonLibrary.FromClient;
@@ -17,26 +18,27 @@ public class LobbyService
 {
     public readonly string ID;
     public LobbyStates State { get; private set; }
-    private readonly ConcurrentDictionary<string, Snake> players = new(); // make read only?
-
-    private readonly string hostPlayer;
-    private readonly int maxPlayers;
-    private readonly DateTime creationTime;
-    private readonly GameServerService gameServer;
-    private readonly Arena arena;
-    private System.Timers.Timer timer;
     public bool IsTimer { get; private set; }
+
+    readonly ConcurrentDictionary<string, Snake> players = new();
+
+    readonly string HostPlayer;
+    readonly int MaxPlayers;
+    readonly DateTime CreationTime;
+    readonly GameServerService GameServer;
+    readonly Arena Arena;
+    Timer Timer;
 
     public LobbyService(string id, string host, int maxPlayers, [FromServices] GameServerService gameServer)
     {
         ID = id;
-        hostPlayer = host;
+        HostPlayer = host;
         State = LobbyStates.Idle;
-        this.maxPlayers = maxPlayers;
-        creationTime = DateTime.Now;
-        this.gameServer = gameServer;
-        arena = new Arena(players);
-        timer = null;
+        MaxPlayers = maxPlayers;
+        CreationTime = DateTime.Now;
+        GameServer = gameServer;
+        Arena = new Arena(players);
+        Timer = null;
         IsTimer = false;
     }
 
@@ -52,80 +54,80 @@ public class LobbyService
     private void EndGame()
     {
         State = LobbyStates.Idle;
-        timer.Stop();
+        Timer.Stop();
     }
 
     private string InitializeGame()
     {
         State = LobbyStates.Initialized;
 
-        if (arena.Speed.Equals(Speed.NoSpeed))
+        if (Arena.Speed.Equals(Speed.NoSpeed))
         {
             IsTimer = false;
-            timer = null;
+            Timer = null;
         }
         else
         {
             IsTimer = true;
         }
 
-        var error = arena.PrepareForNewGame();
+        var error = Arena.PrepareForNewGame();
         return error;
     }
 
     private void StartTimer()
     {
         IsTimer = true;
-        timer = new System.Timers.Timer
+        Timer = new Timer
         {
-            Interval = 70 * (int)arena.Speed
+            Interval = 70 * (int)Arena.Speed
         };
-        timer.Elapsed += new System.Timers.ElapsedEventHandler(OnTimedUpdate);
-        timer.AutoReset = true;
-        timer.Start();
+        Timer.Elapsed += new ElapsedEventHandler(OnTimedUpdate);
+        Timer.AutoReset = true;
+        Timer.Start();
     }
 
-    private void OnTimedUpdate(object source, System.Timers.ElapsedEventArgs e)
+    private void OnTimedUpdate(object source, ElapsedEventArgs e)
     {
-        arena.UpdateActions();
+        Arena.UpdateActions();
 
         if (IsGameEnd())
         {
             SendLobbyMessage(new Message("server", ID, "End", null));
-            if (timer != null)
+            if (Timer != null)
             {
-                timer.Stop();
-                timer.Dispose();
+                Timer.Stop();
+                Timer.Dispose();
             }
             State = LobbyStates.Idle;
             return;
         }
 
-        SendLobbyMessage(new Message("server", ID, "Update", new { status = arena.GenerateReport() }));
+        SendLobbyMessage(new Message("server", ID, "Update", new { status = Arena.GenerateReport() }));
     }
 
     private bool IsGameEnd()
     {
-        var playerCount = players.Count();
+        var activePlayers = players.Values.Where(player => player.IsActive);
+        var playerCount = players.Count;
+
         if (1 < playerCount)
         {
-            var activeCount = players.Values.Select(p => p.IsActive).Where(IsActive => IsActive == true).Count();
-            return activeCount <= 1;
+            return activePlayers.Count() <= 1;
         }
         else if (playerCount == 1)
         {
-            var activeCount = players.Values.Select(p => p.IsActive).Where(IsActive => IsActive == true).Count();
-            return activeCount <= 0;
+            return !activePlayers.Any();
         }
-        else
-        {
-            gameServer.RemoveLobby(ID);
-            return true;
-        }
+
+        return true;
     }
 
-    public int GetPlayerCount() => players.Count();
-    public void SendCloseLobbyMessage(string reason) => SendLobbyMessage(new Message("server", ID, "Exit", new { message = reason }));
+    public int GetPlayerCount() => players.Count;
+
+    public void SendCloseLobbyMessage(string reason) =>
+        SendLobbyMessage(new Message("server", ID, "Exit", new { message = reason }));
+
     public void SendPLayerStatusMessage()
     {
         var playersStatus = CreatePlayerStatusMessage();
@@ -145,7 +147,7 @@ public class LobbyService
                 name = player.Key,
                 color = player.Value.GetColorString()
             };
-            newPlayer.type = newPlayer.name.Equals(hostPlayer) ? "Host" : "Player";
+            newPlayer.type = newPlayer.name.Equals(HostPlayer) ? "Host" : "Player";
             list.Add(newPlayer);
         }
         return list;
@@ -153,75 +155,69 @@ public class LobbyService
 
     public void HandleMessage(Message message)
     {
-        try
+        switch (message.type)
         {
-            switch (message.type)
-            {
-                case "Start":
-                    if (message.sender.Equals(hostPlayer) && State.Equals(LobbyStates.Idle))
-                    {
-                        Debug.WriteLine($"Game initialised in {ID} lobby.");
-                        var inicializationError = InitializeGame();
+            case "Start":
+                if (message.sender.Equals(HostPlayer) && State.Equals(LobbyStates.Idle))
+                {
+                    Debug.WriteLine($"Game initialised in {ID} lobby.");
+                    _ = InitializeGame();
 
-                        var report = arena.GenerateReport();
-                        SendLobbyMessage(new Message("server", ID, "Start", new { Start = report }));
-                        Task.Delay(2000).Wait();
+                    var report = Arena.GenerateReport();
+                    SendLobbyMessage(new Message("server", ID, "Start", new { Start = report }));
+                    Task.Delay(2000).Wait();
 
-                        if (IsTimer)
-                        {
-                            StartTimer();
-                        }
-
-                        State = LobbyStates.inGame;
-                    }
-                    break;
-                case "Players":
-                    SendPLayerStatusMessage();
-                    break;
-                case "Settings":
-                    if (message.sender.Equals(hostPlayer))
+                    if (IsTimer)
                     {
-                        var settings = Settings.Deserialize(message.body);
-                        settings = arena.SetSettings(settings);
-                        SendLobbyMessage(new Message("server", ID, "Settings", new { Settings = settings }));
-                    }
-                    break;
-                case "Update":
-                    if (!State.Equals(LobbyStates.inGame))
-                    {
-                        break;
+                        StartTimer();
                     }
 
-                    var direction = (MoveDirection)message.body;
-                    arena.SetPendingAction(message.sender, direction);
-
-                    if (!IsTimer)
-                    {
-                        OnTimedUpdate(null, null);
-                    }
-
+                    State = LobbyStates.inGame;
+                }
+                break;
+            case "Players":
+                SendPLayerStatusMessage();
+                break;
+            case "Settings":
+                if (message.sender.Equals(HostPlayer))
+                {
+                    var settings = Settings.Deserialize(message.body);
+                    settings = Arena.SetSettings(settings);
+                    SendLobbyMessage(new Message("server", ID, "Settings", new { Settings = settings }));
+                }
+                break;
+            case "Update":
+                if (!State.Equals(LobbyStates.inGame))
+                {
                     break;
-                default:
-                    Debug.WriteLine($"---Unexpected message from {message.sender}, content: {message.body.ToString()}");
-                    break;
-            }
-        }
-        catch
-        {
-            throw;
+                }
+
+                var direction = (MoveDirection)message.body;
+                Arena.SetPendingAction(message.sender, direction);
+
+                if (!IsTimer)
+                {
+                    OnTimedUpdate(null, null);
+                }
+
+                break;
+            default:
+                Debug.WriteLine($"---Unexpected message from {message.sender}, content: {message.body.ToString()}");
+                break;
         }
     }
 
-    private void SendLobbyMessage(Message message) => gameServer.SendLobbyMessage(ID, message);
+    private void SendLobbyMessage(Message message)
+        => GameServer.SendLobbyMessage(ID, message);
 
     public void RemovePlayer(string playerName)
     {
-        if (playerName == hostPlayer)
+        if (playerName == HostPlayer)
         {
-            gameServer.RemoveLobby(ID);
+            GameServer.RemoveLobby(ID);
         }
 
-        _ = arena.ClearSnake(playerName);
+        _ = Arena.ClearSnake(playerName);
         _ = players.TryRemove(playerName, out _);
         var status = GetallPlayerStatus();
         SendLobbyMessage(new Message("server", ID, "Players", new { players = status, removed = playerName }));
@@ -239,7 +235,7 @@ public class LobbyService
         return false;
     }
 
-    public bool IsLobbyFull() => maxPlayers <= players.Count;
+    public bool IsLobbyFull() => MaxPlayers <= players.Count;
 
     //TODO: Implement; take into account time of existance. // => players.Count > 0; 
     public bool IsActive() => true;

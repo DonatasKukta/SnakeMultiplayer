@@ -15,14 +15,16 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.CheckConsentNeeded = context => true;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
+
 builder.Services.AddSingleton<GameServerService>();
+builder.Services.AddTransient<IWebSocketHandler, WebSocketHandler>();
 
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
-    _ = app.UseExceptionHandler("/Error");
-    _ = app.UseHsts();
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
 }
 
 app.UseWebSockets();
@@ -33,7 +35,7 @@ app.UseStaticFiles();
 
 app.UseMvc(routes =>
 {
-    _ = routes.MapRoute(
+    routes.MapRoute(
         name: "default",
         template: "{controller=Home}/{action=Index}/{id?}");
 });

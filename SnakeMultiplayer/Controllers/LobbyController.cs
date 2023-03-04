@@ -28,17 +28,17 @@ public class LobbyController : Controller
             return View();
         }
 
-        if (gameServer.TryCreateLobby(id, playerName, gameServer))
+        if (!gameServer.TryCreateLobby(id, playerName, gameServer))
         {
-            SetCookie("PlayerName", playerName);
-            SetCookie("LobbyId", id);
-            ViewData["IsHost"] = true;
-            return View("Views/Lobby/Index.cshtml");
+            ViewData["ErrorMessage"] = $"Lobby with {id} already exists. Please enter different name";
+            return View();
         }
 
-        ViewData["ErrorMessage"] = $"Lobby with {id} already exists. Please enter different name";
+        SetCookie("PlayerName", playerName);
+        SetCookie("LobbyId", id);
+        ViewData["IsHost"] = true;
 
-        return View();
+        return View("Views/Lobby/Index.cshtml");
     }
 
     [HttpGet]

@@ -2,11 +2,9 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 
 using JsonLibrary;
 
@@ -21,12 +19,11 @@ public class GameServerService
 {
     //TODO: Move to constants
     public static Regex ValidStringRegex = new(@"^[a-zA-Z0-9]+[a-zA-Z0-9\s_]*[a-zA-Z0-9]+$");
-    readonly int WebSocketMessageBufferSize = 1024 * 4;
     readonly int MaxPlayersInLobby = 4;
 
     readonly ConcurrentDictionary<string, Lobby> lobbies = new();
 
-    private string AddPlayerToLobby(string lobby, string player, WebSocket socket)
+    public string AddPlayerToLobby(string lobby, string player, WebSocket socket)
     {
         if (socket == null)
         {
@@ -43,6 +40,14 @@ public class GameServerService
         }
     }
 
+    public void SendPLayerStatusMessage(string lobby) =>
+        lobbies[lobby].LobbyService.SendPLayerStatusMessage();
+
+    public void HandleLobbyMessage(string lobby, Message message)
+    {
+        lobbies[lobby].LobbyService.HandleMessage(message);
+    }
+
     public void SendLobbyMessage(string lobby, Message message)
     {
         if (!lobbies.TryGetValue(lobby, out var currLobby))
@@ -55,101 +60,6 @@ public class GameServerService
         {
             SendMessageAsync(socket, message);
         }
-    }
-
-    public async Task HandleWebSocketAsync(WebSocket webSocket)
-    {
-        var lobby = string.Empty;
-        var playerName = string.Empty;
-        var closeStatus = WebSocketCloseStatus.Empty;
-        try
-        {
-            var message = await ReceiveMessageAsync(webSocket);
-            lobby = message.lobby;
-            playerName = message.sender;
-
-            if (string.IsNullOrEmpty(lobby) || !ValidStringRegex.IsMatch(lobby))
-            {
-                throw new ArgumentException($"Incorrent lobby name \"{lobby}\" received from web socket");
-            }
-            else if (string.IsNullOrEmpty(playerName) || !ValidStringRegex.IsMatch(playerName))
-            {
-                throw new ArgumentException($"Incorrent player name \"{playerName}\" received from web socket");
-            }
-
-            var errorMessage = AddPlayerToLobby(lobby, playerName, webSocket);
-
-            if (!errorMessage.Equals(string.Empty))
-            {
-                throw new OperationCanceledException(errorMessage);
-            }
-
-            lobbies[lobby].LobbyService.SendPLayerStatusMessage();
-
-            while (lobbies[lobby].PlayerExists(playerName))
-            {
-                var buffer = new byte[WebSocketMessageBufferSize];
-                var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                if (result.CloseStatus.HasValue)
-                {
-                    Debug.WriteLine($"Player {playerName} disconnected from lobby {lobby}.");
-                    break;
-                }
-                var receivedMessage = Strings.getString(buffer);
-                dynamic msgObj = Strings.getObject(receivedMessage);
-                var msg = new Message((string)msgObj.sender, (string)msgObj.lobby, (string)msgObj.type, msgObj.body);
-                lobbies[lobby].LobbyService.HandleMessage(msg);
-            }
-        }
-        catch (Exception)
-        {
-            // TODO: Handle
-        }
-        finally
-        {
-
-            lobbies[lobby].RemovePlayer(playerName);
-
-            if (webSocket.State != WebSocketState.Closed)
-            {
-                CloseSocketAsync(webSocket, closeStatus);
-            }
-        }
-    }
-
-    private async void CloseSocketAsync(WebSocket webSocket, WebSocketCloseStatus status)
-    {
-        try
-        {
-            await webSocket.CloseAsync(status, null, CancellationToken.None);
-        }
-        catch (Exception)
-        {
-            // TODO: Handle
-        }
-    }
-
-    private async void SendMessageAsync(WebSocket webSocket, Message message)
-    {
-        try
-        {
-            var buffer = Strings.getBytes(Message.Serialize(message));
-            await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            // TODO: Handle
-            Debug.WriteLine($"Could not send to lobby {message.lobby}, of type {message.type}. Error: {ex.Message}");
-        }
-    }
-
-    private async Task<Message> ReceiveMessageAsync(WebSocket webSocket)
-    {
-        var buffer = new byte[WebSocketMessageBufferSize];
-        _ = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
-        var text = Strings.getString(buffer);
-        return Message.Deserialize(text);
     }
 
     public bool TryCreateLobby(string lobbyName, string hostPlayerName, GameServerService service)
@@ -169,14 +79,14 @@ public class GameServerService
 
     public bool PlayerExists(string lobbyName, string playerName) =>
         lobbies.TryGetValue(lobbyName, out var current)
-            ? current.PlayerExists(playerName)
-            : throw new EntryPointNotFoundException($"Lobby {lobbyName} does not exists");
+        ? current.PlayerExists(playerName)
+        : throw new EntryPointNotFoundException($"Lobby {lobbyName} does not exists");
 
     public void RemoveLobby(string lobby)
     {
         if (lobby == null)
         {
-            throw new ArgumentNullException("Tried to remove null lobby from lobby dictionary");
+            throw new ArgumentNullException(nameof(lobby), "Tried to remove null lobby from lobby dictionary");
         }
 
         if (lobbies.ContainsKey(lobby))
@@ -185,6 +95,11 @@ public class GameServerService
         }
 
         _ = lobbies.TryRemove(lobby, out _);
+    }
+
+    public void RemovePlayer(string lobby, string player)
+    {
+        lobbies[lobby].RemovePlayer(player);
     }
 
     public List<Tuple<string, string>> GetLobbyStatus()
@@ -198,71 +113,17 @@ public class GameServerService
         return lobbyList;
     }
 
-    //TODO: Refactor
-    private class Lobby
+    static async void SendMessageAsync(WebSocket webSocket, Message message)
     {
-        readonly ConcurrentDictionary<string, WebSocket> players;
-        public LobbyService LobbyService { get; private set; }
-
-        public Lobby(string name, string hostName, int maxPlayers, GameServerService gameServer)
+        try
         {
-            players = new ConcurrentDictionary<string, WebSocket>();
-            LobbyService = new LobbyService(name, hostName, maxPlayers, gameServer);
+            var buffer = Strings.getBytes(Message.Serialize(message));
+            await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
         }
-
-        public int GetPlayerCount() => LobbyService.GetPlayerCount();
-
-        public string AddPlayer(string playerName, WebSocket webSocket)
+        catch (Exception ex)
         {
-            if (playerName == null)
-            {
-                return "Attempt to add player with null string.";
-            }
-            else if (webSocket == null)
-            {
-                return $"Attempt to add player {playerName} with null WebSocket.";
-            }
-            else if (!IsActive())
-            {
-                return "Lobby {LobbyService.ID} is not active. Please join another lobby";
-            }
-            else if (IsFull())
-            {
-                return $"Lobby {LobbyService.ID} is full. Please join another lobby.";
-            }
-
-            var errorMessage = LobbyService.AddPlayer(playerName);
-            if (!errorMessage.Equals(string.Empty))
-            {
-                return errorMessage;
-            }
-
-            if (!players.TryAdd(playerName, webSocket))
-            {
-                LobbyService.RemovePlayer(playerName);
-                return $"Unexpected error while trying to join {LobbyService.ID}. Please try again later";
-            }
-            return string.Empty;
+            // TODO: Handle
+            Debug.WriteLine($"Could not send to lobby {message.lobby}, of type {message.type}. Error: {ex.Message}");
         }
-
-
-        public bool PlayerExists(string playerName) => playerName == null
-            ? throw new ArgumentNullException("Attempt to check existance of player with null string.")
-            : players.ContainsKey(playerName);
-
-        public void RemovePlayer(string player)
-        {
-            if (player == null)
-            {
-                throw new ArgumentNullException("Attempt to remove player with null string.");
-            }
-
-            LobbyService.RemovePlayer(player);
-            _ = players.TryRemove(player, out _);
-        }
-
-        public WebSocket[] GetPlayersWebSockets() => players.Values.ToArray();
-        public bool IsFull() => LobbyService.IsLobbyFull();
-        public bool IsActive() => LobbyService.IsActive();
     }
 }
