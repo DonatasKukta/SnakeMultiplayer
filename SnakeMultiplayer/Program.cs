@@ -18,6 +18,7 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 
 builder.Services.AddSingleton<GameServerService>();
 builder.Services.AddTransient<IWebSocketHandler, WebSocketHandler>();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -29,6 +30,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseWebSockets();
 app.UseMiddleware<WebSocketMiddleware>();
+app.MapHub<LobbyHub>("/LobbyHub");
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

@@ -24,13 +24,13 @@
 
     var gameController = new GameController(PlayerName, LobbyId, MainDispatcher);
     gameController.setEnvironment();
-    gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder)); 
+    gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder));
 
     window.addEventListener('beforeunload', (event) => {
         gameController.socketController.close();
-    });    
+    });
     window.addEventListener('resize', reSet.bind(this), false);
-    
+
     DisableHostButtons();
 
     if (document.getElementById("startButton") !== null) {
@@ -41,8 +41,8 @@
         document.getElementById("SlowSpeedBtn").addEventListener('click', function () {
             gameController.sendSettingUpdate({ speed: "Slow" });
         })
-        }
-    
+    }
+
     if (document.getElementById("NormalSpeedBtn") !== null) {
         document.getElementById("NormalSpeedBtn").addEventListener('click', function () {
             gameController.sendSettingUpdate({ speed: "Normal" });
@@ -117,12 +117,12 @@
     function reSet() {
         onResize();
         gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder));
-        gameController.drawSnakes();       
+        gameController.drawSnakes();
     }
 
     function EnableHostButtons() {
         if (document.getElementById("startButton") !== null) {
-        document.getElementById("startButton").disabled = false;
+            document.getElementById("startButton").disabled = false;
         }
         if (document.getElementById("SpeedBtn") !== null) {
             document.getElementById("SpeedBtn").disabled = false;
@@ -130,7 +130,7 @@
     }
     function DisableHostButtons() {
         if (document.getElementById("startButton") !== null) {
-        document.getElementById("startButton").disabled = true;
+            document.getElementById("startButton").disabled = true;
         }
         if (document.getElementById("SpeedBtn") !== null) {
             document.getElementById("SpeedBtn").disabled = true;
@@ -143,7 +143,7 @@
         if (settings !== null || settings.speed !== null) {
             speed = settings.speed;
             var speedBtn = document.getElementById("SpeedBtn");
-            if (speedBtn !=null)
+            if (speedBtn != null)
                 speedBtn.textContent = "Speed: " + speed;
         }
     }
@@ -151,7 +151,7 @@
     function onStartGameButtonClick(e) {
         gameController.sendGameStart();
     }
-    
+
     function onGameStartRececeived(e) {
         var element = document.getElementById('Canvas');
         element.style.visibility = 'visible';
@@ -174,7 +174,7 @@
             block: "start",
             inline: "start",
         });
-        
+
         EnableHostButtons();
     }
 
@@ -230,4 +230,30 @@
     function Sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/LobbyHub")
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
+
+    connection.on("ReceiveMessage", (user, message) => {
+        console.error(user, message);
+    });
+
+    connection.onclose(async () => {
+        await start();
+    });
+
+    async function start() {
+        try {
+            console.error("SignalR Connecting.");
+            await connection.start();
+            console.error("SignalR Connected.");
+            await connection.invoke("SendMessage", "TestPlayer", "TestMessage");
+        } catch (err) {
+            console.log(err);
+            setTimeout(start, 5000);
+        }
+    };
+    start();
 })();
