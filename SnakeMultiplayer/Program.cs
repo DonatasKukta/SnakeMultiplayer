@@ -16,7 +16,7 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
 
-builder.Services.AddSingleton<GameServerService>();
+builder.Services.AddSingleton<IGameServerService, GameServerService>();
 builder.Services.AddTransient<IWebSocketHandler, WebSocketHandler>();
 builder.Services.AddSignalR();
 

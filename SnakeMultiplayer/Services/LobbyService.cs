@@ -14,7 +14,22 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace SnakeMultiplayer.Services;
 
-public class LobbyService
+public interface ILobbyService
+{
+    bool IsTimer { get; }
+    LobbyStates State { get; }
+
+    string AddPlayer(string playerName);
+    int GetPlayerCount();
+    void HandleMessage(Message message);
+    bool IsActive();
+    bool IsLobbyFull();
+    void RemovePlayer(string playerName);
+    void SendCloseLobbyMessage(string reason);
+    void SendPLayerStatusMessage();
+}
+
+public class LobbyService : ILobbyService
 {
     public readonly string ID;
     public LobbyStates State { get; private set; }
@@ -25,11 +40,11 @@ public class LobbyService
     readonly string HostPlayer;
     readonly int MaxPlayers;
     readonly DateTime CreationTime;
-    readonly GameServerService GameServer;
+    readonly IGameServerService GameServer;
     readonly Arena Arena;
     Timer Timer;
 
-    public LobbyService(string id, string host, int maxPlayers, [FromServices] GameServerService gameServer)
+    public LobbyService(string id, string host, int maxPlayers, [FromServices] IGameServerService gameServer)
     {
         ID = id;
         HostPlayer = host;

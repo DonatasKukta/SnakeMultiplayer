@@ -11,7 +11,7 @@ class Lobby
 
     readonly ConcurrentDictionary<string, WebSocket> players;
 
-    public Lobby(string name, string hostName, int maxPlayers, GameServerService gameServer)
+    public Lobby(string name, string hostName, int maxPlayers, IGameServerService gameServer)
     {
         players = new ConcurrentDictionary<string, WebSocket>();
         LobbyService = new LobbyService(name, hostName, maxPlayers, gameServer);
@@ -68,6 +68,7 @@ class Lobby
         _ = players.TryRemove(player, out _);
     }
 
+    public LobbyService GetLobbyService() => LobbyService;
     public WebSocket[] GetPlayersWebSockets() => players.Values.ToArray();
     public bool IsFull() => LobbyService.IsLobbyFull();
     public bool IsActive() => LobbyService.IsActive();

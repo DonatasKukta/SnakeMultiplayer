@@ -16,9 +16,9 @@ public class WebSocketHandler : IWebSocketHandler
 {
     readonly int WebSocketMessageBufferSize = 1024 * 4;
 
-    readonly GameServerService gameServer;
+    readonly IGameServerService gameServer;
 
-    public WebSocketHandler(GameServerService gameServer)
+    public WebSocketHandler(IGameServerService gameServer)
     {
         this.gameServer = gameServer;
     }

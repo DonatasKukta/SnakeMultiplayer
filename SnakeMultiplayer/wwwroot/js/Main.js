@@ -230,30 +230,4 @@
     function Sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-
-    const connection = new signalR.HubConnectionBuilder()
-        .withUrl("/LobbyHub")
-        .configureLogging(signalR.LogLevel.Information)
-        .build();
-
-    connection.on("ReceiveMessage", (user, message) => {
-        console.error(user, message);
-    });
-
-    connection.onclose(async () => {
-        await start();
-    });
-
-    async function start() {
-        try {
-            console.error("SignalR Connecting.");
-            await connection.start();
-            console.error("SignalR Connected.");
-            await connection.invoke("SendMessage", "TestPlayer", "TestMessage");
-        } catch (err) {
-            console.log(err);
-            setTimeout(start, 5000);
-        }
-    };
-    start();
 })();

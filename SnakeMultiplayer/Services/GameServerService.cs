@@ -10,12 +10,28 @@ using JsonLibrary;
 
 namespace SnakeMultiplayer.Services;
 
+public interface IGameServerService
+{
+    string AddPlayerToLobby(string lobby, string player, WebSocket socket);
+    string CanJoin(string lobbyName, string playerName);
+    ILobbyService GetLobbyService(string lobby);
+    List<Tuple<string, string>> GetLobbyStatus();
+    void HandleLobbyMessage(string lobby, Message message);
+    bool LobbyExists(string lobbyName);
+    bool PlayerExists(string lobbyName, string playerName);
+    void RemoveLobby(string lobby);
+    void RemovePlayer(string lobby, string player);
+    void SendLobbyMessage(string lobby, Message message);
+    void SendPLayerStatusMessage(string lobby);
+    bool TryCreateLobby(string lobbyName, string hostPlayerName, IGameServerService service);
+}
+
 /// <summary>
 /// Gives abstraction layer to web socket based communication:
 /// Distributes incoming messages to relevant lobbies and 
 /// forwads messages from lobbies to web sockets
 /// </summary>
-public class GameServerService
+public class GameServerService : IGameServerService
 {
     //TODO: Move to constants
     public static Regex ValidStringRegex = new(@"^[a-zA-Z0-9]+[a-zA-Z0-9\s_]*[a-zA-Z0-9]+$");
@@ -62,7 +78,7 @@ public class GameServerService
         }
     }
 
-    public bool TryCreateLobby(string lobbyName, string hostPlayerName, GameServerService service)
+    public bool TryCreateLobby(string lobbyName, string hostPlayerName, IGameServerService service)
         => lobbies.TryAdd(lobbyName, new Lobby(lobbyName, hostPlayerName, MaxPlayersInLobby, service));
 
     public string CanJoin(string lobbyName, string playerName) =>
@@ -112,6 +128,9 @@ public class GameServerService
         }
         return lobbyList;
     }
+
+    public ILobbyService GetLobbyService(string lobby) =>
+        lobbies[lobby].GetLobbyService();
 
     static async void SendMessageAsync(WebSocket webSocket, Message message)
     {
