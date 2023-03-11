@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 
 using JsonLibrary;
+using JsonLibrary.FromClient;
 using JsonLibrary.FromServer;
 
 using Microsoft.AspNetCore.SignalR;
@@ -15,9 +16,9 @@ public interface IClientHub
 {
     Task Ping();
     Task JoinLobby(string lobbyName, string playerName);
+    Task UpdateLobbySettings(Message message);
     void InitiateGameStart(Message message);
-    void UpdateLobbySettings(Message message);
-    void OnPlayerUpdate(Message message);
+    void UpdatePlayerState(Message message);
 }
 
 /// <summary>
@@ -26,14 +27,19 @@ public interface IClientHub
 public interface IServerHub
 {
     Task SendPlayerStatusUpdate(string lobby);
-    Task SendSettingsUpdate();
-    Task StartGame();
     Task SendArenaStatusUpdate(string looby, ArenaStatus status);
     Task EndGame();
 }
 
 public class LobbyHub : Hub, IClientHub, IServerHub
 {
+    static class ClientMethod
+    {
+        public const string OnSettingsUpdate = "OnSettingsUpdate";
+        public const string OnPlayerStatusUpdate = "OnPlayerStatusUpdate";
+        public const string OnPing = "OnPing";
+    }
+
     string PlayerName;
     string LobbyName;
     ILobbyService LobbyService;
@@ -63,28 +69,28 @@ public class LobbyHub : Hub, IClientHub, IServerHub
         await (this as IServerHub).SendPlayerStatusUpdate(LobbyName);
     }
 
-    public void UpdateLobbySettings(Message message) =>
-        LobbyService.HandleMessage(message);
+    public async Task UpdateLobbySettings(Message message)
+    {
+        if (message.type == "Settings")
+        {
+            var settings = Settings.Deserialize(message.body);
+            //TODO: understand why LobbyService is null
+            settings = LobbyService.SetSettings(settings);
+            var update = new Message("server", LobbyName, "Settings", new { Settings = settings });
+            await Clients.Group(LobbyName).SendAsync(ClientMethod.OnSettingsUpdate, update);
+        }
+    }
 
     public void InitiateGameStart(Message message) =>
         LobbyService.HandleMessage(message);
 
-    public void OnPlayerUpdate(Message message) =>
+    public void UpdatePlayerState(Message message) =>
         LobbyService.HandleMessage(message);
 
-    Task IServerHub.SendPlayerStatusUpdate(string lobby)
+    async Task IServerHub.SendPlayerStatusUpdate(string lobby)
     {
-        return Task.CompletedTask;
-    }
-
-    Task IServerHub.SendSettingsUpdate()
-    {
-        return Task.CompletedTask;
-    }
-
-    Task IServerHub.StartGame()
-    {
-        return Task.CompletedTask;
+        var status = LobbyService.CreatePlayerStatusMessage();
+        await Clients.Group(lobby).SendAsync(ClientMethod.OnPlayerStatusUpdate, status);
     }
 
     Task IServerHub.SendArenaStatusUpdate(string looby, ArenaStatus status)

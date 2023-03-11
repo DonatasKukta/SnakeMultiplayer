@@ -9,7 +9,7 @@
         this.currDirection = MoveDirection.Down;
         this.body.addFirst(new Cell(baseCell.size, this.color, baseCell.outlineColor, x, y));
     }
-    
+
     // Always returns added head coordinates AND deleted tail coordinates.
     update(direction, isFood) {
         var newHead = this.body.getFirst().getCopy();
@@ -54,7 +54,9 @@ class GameController {
 
         this.socketController = new WebSocketController(this.playerName, this.lobbyId, this.socketDispatcher);
         this.socketController.connect();
-        //this.connect();
+
+        this.signalRController = new SignalRController(this.playerName, this.lobbyId, this.socketDispatcher);
+        this.signalRController.connect();
     }
 
     onOpenedSocket(e) {
@@ -196,22 +198,20 @@ class GameController {
     }
 
     sendMovementUpdate(direction) {
-        this.socketController.send("Update", JSON.stringify(direction));
+        this.signalRController.updatePlayerState(direction);
     }
 
     sendGameStart() {
-        this.socketController.send("Start", null);
+        this.signalRController.initiateGameStart();
     }
 
     sendSettingUpdate(settings) {
-        //var settings = { cellCount : this.cellContainer.gridSize, isWall: false };
-
-        this.socketController.send("Settings", settings);
+        this.signalRController.updateLobbySettings(settings);
     }
 
     drawSnakes() {
 
-        for(var key in this.snakes) {
+        for (var key in this.snakes) {
             var snake = this.snakes[key];
             if (snake != null) {
                 this.cellContainer.initializeSnake(this.snakes[key].getBodyArray(), this.snakes[key].color);

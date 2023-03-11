@@ -4,10 +4,10 @@ namespace JsonLibrary;
 
 public class Message
 {
-    public string sender;
-    public string lobby;
-    public string type;
-    public dynamic body;
+    public string sender { get; set; }
+    public string lobby { get; set; }
+    public string type { get; set; }
+    public dynamic body { get; set; }
 
     public Message() { }
     public Message(string sender, string lobby, string type, dynamic body)

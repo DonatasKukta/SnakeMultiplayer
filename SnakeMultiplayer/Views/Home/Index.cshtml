@@ -30,31 +30,3 @@
         </div>
     </div>
 </div>
-
-<script>
-    const connection = new signalR.HubConnectionBuilder()
-        .withUrl("/LobbyHub")
-        .configureLogging(signalR.LogLevel.Information)
-        .build();
-
-    connection.on("Ping", message => {
-        console.warn("Ping recieved from Server:", message);
-    });
-
-    connection.onclose(async () => {
-        await start();
-    });
-
-    async function start() {
-        try {
-            console.warn("SignalR Connecting.");
-            await connection.start();
-            console.warn("SignalR Connected.");
-            await connection.invoke("Ping");
-        } catch (err) {
-            console.log(err);
-            setTimeout(start, 5000);
-        }
-    };
-    start();
-</script>

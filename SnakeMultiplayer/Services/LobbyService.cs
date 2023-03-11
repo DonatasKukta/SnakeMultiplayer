@@ -20,6 +20,7 @@ public interface ILobbyService
     LobbyStates State { get; }
 
     string AddPlayer(string playerName);
+    Message CreatePlayerStatusMessage();
     int GetPlayerCount();
     void HandleMessage(Message message);
     bool IsActive();
@@ -27,6 +28,7 @@ public interface ILobbyService
     void RemovePlayer(string playerName);
     void SendCloseLobbyMessage(string reason);
     void SendPLayerStatusMessage();
+    Settings SetSettings(Settings settings);
 }
 
 public class LobbyService : ILobbyService
@@ -149,7 +151,7 @@ public class LobbyService : ILobbyService
         SendLobbyMessage(playersStatus);
     }
 
-    private Message CreatePlayerStatusMessage() =>
+    public Message CreatePlayerStatusMessage() =>
         new("server", ID, "Players", new { players = GetallPlayerStatus() });
 
     private List<Player> GetallPlayerStatus()
@@ -221,6 +223,8 @@ public class LobbyService : ILobbyService
                 break;
         }
     }
+
+    public Settings SetSettings(Settings settings) => Arena.SetSettings(settings);
 
     private void SendLobbyMessage(Message message)
         => GameServer.SendLobbyMessage(ID, message);
