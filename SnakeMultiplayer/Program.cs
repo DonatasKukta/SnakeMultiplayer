@@ -19,7 +19,7 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 builder.Services.AddSingleton<IGameServerService, GameServerService>();
 builder.Services.AddTransient<IWebSocketHandler, WebSocketHandler>();
 builder.Services.AddSignalR();
-
+// TODO: Fix circular dependency GameServerService <-> LobbyHub
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

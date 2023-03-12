@@ -10,18 +10,20 @@
             .build();
 
         this.connection.on("OnPing", () => this.onPing());
+
+        //TODO: Refactor to separate methods
         this.connection.on("OnSettingsUpdate", (message) => this.onMessage(message));
         this.connection.on("OnPlayerStatusUpdate", (message) => this.onMessage(message));
+        this.connection.on("OnGameEnd", (message) => this.onMessage(message));
+        this.connection.on("OnLobbyMessage", (message) => this.onMessage(message));
+        this.connection.on("OnGameStart", (message) => this.onMessage(message));
+        this.connection.on("ArenaStatusUpdate", (message) => this.onMessage(message));
         this.connection.onclose(this.onClose);
     }
 
     async connect() {
         try {
             console.warn("SignalR Connecting.");
-            //this.connection.start()
-            //    .then(this.connection.invoke("Ping"))
-            //    .then(this.onOpen());
-
             await this.connection.start();
             console.warn("SignalR Connected.");
             await this.connection.invoke("Ping");

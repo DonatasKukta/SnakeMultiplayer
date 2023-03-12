@@ -5,16 +5,17 @@ using System;
 
 namespace SnakeMultiplayer.Services;
 
+//TODO: Delete class
 class Lobby
 {
     public LobbyService LobbyService { get; set; }
 
     readonly ConcurrentDictionary<string, WebSocket> players;
 
-    public Lobby(string name, string hostName, int maxPlayers, IGameServerService gameServer)
+    public Lobby(string name, string hostName, int maxPlayers, IGameServerService gameServer, LobbyHub lobbyHub)
     {
         players = new ConcurrentDictionary<string, WebSocket>();
-        LobbyService = new LobbyService(name, hostName, maxPlayers, gameServer);
+        LobbyService = new LobbyService(name, hostName, maxPlayers, gameServer, lobbyHub);
     }
 
     public int GetPlayerCount() => LobbyService.GetPlayerCount();

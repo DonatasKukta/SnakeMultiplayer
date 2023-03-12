@@ -10,8 +10,6 @@ using JsonLibrary;
 using JsonLibrary.FromClient;
 using JsonLibrary.FromServer;
 
-using Microsoft.AspNetCore.Mvc;
-
 namespace SnakeMultiplayer.Services;
 
 public interface ILobbyService
@@ -43,10 +41,11 @@ public class LobbyService : ILobbyService
     readonly int MaxPlayers;
     readonly DateTime CreationTime;
     readonly IGameServerService GameServer;
+    readonly IServerHub ServerHub;
     readonly Arena Arena;
     Timer Timer;
 
-    public LobbyService(string id, string host, int maxPlayers, [FromServices] IGameServerService gameServer)
+    public LobbyService(string id, string host, int maxPlayers, IGameServerService gameServer, LobbyHub serverHub)
     {
         ID = id;
         HostPlayer = host;
@@ -54,6 +53,7 @@ public class LobbyService : ILobbyService
         MaxPlayers = maxPlayers;
         CreationTime = DateTime.Now;
         GameServer = gameServer;
+        ServerHub = serverHub;
         Arena = new Arena(players);
         Timer = null;
         IsTimer = false;
@@ -108,19 +108,19 @@ public class LobbyService : ILobbyService
     {
         Arena.UpdateActions();
 
-        if (IsGameEnd())
+        if (!IsGameEnd())
         {
-            SendLobbyMessage(new Message("server", ID, "End", null));
-            if (Timer != null)
-            {
-                Timer.Stop();
-                Timer.Dispose();
-            }
-            State = LobbyStates.Idle;
+            ServerHub.SendArenaStatusUpdate(ID, Arena.GenerateReport());
             return;
         }
 
-        SendLobbyMessage(new Message("server", ID, "Update", new { status = Arena.GenerateReport() }));
+        ServerHub.EndGame(ID);
+        State = LobbyStates.Idle;
+        if (Timer != null)
+        {
+            Timer.Stop();
+            Timer.Dispose();
+        }
     }
 
     private bool IsGameEnd()
@@ -143,18 +143,19 @@ public class LobbyService : ILobbyService
     public int GetPlayerCount() => players.Count;
 
     public void SendCloseLobbyMessage(string reason) =>
-        SendLobbyMessage(new Message("server", ID, "Exit", new { message = reason }));
+        ServerHub.ExitGame(ID, reason);
+
 
     public void SendPLayerStatusMessage()
     {
         var playersStatus = CreatePlayerStatusMessage();
-        SendLobbyMessage(playersStatus);
+        ServerHub.SendPlayerStatusUpdate(ID, playersStatus);
     }
 
     public Message CreatePlayerStatusMessage() =>
-        new("server", ID, "Players", new { players = GetallPlayerStatus() });
+        new("server", ID, "Players", new { players = GetAllPlayerStatus() });
 
-    private List<Player> GetallPlayerStatus()
+    private List<Player> GetAllPlayerStatus()
     {
         var list = new List<Player>(players.Count);
         foreach (var player in players)
@@ -181,7 +182,7 @@ public class LobbyService : ILobbyService
                     _ = InitializeGame();
 
                     var report = Arena.GenerateReport();
-                    SendLobbyMessage(new Message("server", ID, "Start", new { Start = report }));
+                    ServerHub.InitiateGameStart(ID, report);
                     Task.Delay(2000).Wait();
 
                     if (IsTimer)
@@ -194,14 +195,6 @@ public class LobbyService : ILobbyService
                 break;
             case "Players":
                 SendPLayerStatusMessage();
-                break;
-            case "Settings":
-                if (message.sender.Equals(HostPlayer))
-                {
-                    var settings = Settings.Deserialize(message.body);
-                    settings = Arena.SetSettings(settings);
-                    SendLobbyMessage(new Message("server", ID, "Settings", new { Settings = settings }));
-                }
                 break;
             case "Update":
                 if (!State.Equals(LobbyStates.inGame))
@@ -226,9 +219,6 @@ public class LobbyService : ILobbyService
 
     public Settings SetSettings(Settings settings) => Arena.SetSettings(settings);
 
-    private void SendLobbyMessage(Message message)
-        => GameServer.SendLobbyMessage(ID, message);
-
     public void RemovePlayer(string playerName)
     {
         if (playerName == HostPlayer)
@@ -238,8 +228,9 @@ public class LobbyService : ILobbyService
 
         _ = Arena.ClearSnake(playerName);
         _ = players.TryRemove(playerName, out _);
-        var status = GetallPlayerStatus();
-        SendLobbyMessage(new Message("server", ID, "Players", new { players = status, removed = playerName }));
+        var status = GetAllPlayerStatus();
+        //SendLobbyMessage(new Message("server", ID, "Players", new { players = status, removed = playerName }));
+        ServerHub.SendLobbyMessage(ID, new Message("server", ID, "Players", new { players = status, removed = playerName }));
     }
 
     private bool PlayerExists(string playerName)

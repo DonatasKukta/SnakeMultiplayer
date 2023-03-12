@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 using JsonLibrary;
 
@@ -21,7 +19,6 @@ public interface IGameServerService
     bool PlayerExists(string lobbyName, string playerName);
     void RemoveLobby(string lobby);
     void RemovePlayer(string lobby, string player);
-    void SendLobbyMessage(string lobby, Message message);
     void SendPLayerStatusMessage(string lobby);
     bool TryCreateLobby(string lobbyName, string hostPlayerName, IGameServerService service);
 }
@@ -38,6 +35,10 @@ public class GameServerService : IGameServerService
     readonly int MaxPlayersInLobby = 4;
 
     readonly ConcurrentDictionary<string, Lobby> lobbies = new();
+
+    readonly LobbyHub LobbyHub;
+
+    public GameServerService(LobbyHub serverHub) => LobbyHub = serverHub;
 
     public string AddPlayerToLobby(string lobby, string player, WebSocket socket)
     {
@@ -64,22 +65,8 @@ public class GameServerService : IGameServerService
         lobbies[lobby].LobbyService.HandleMessage(message);
     }
 
-    public void SendLobbyMessage(string lobby, Message message)
-    {
-        if (!lobbies.TryGetValue(lobby, out var currLobby))
-        {
-            return;
-        }
-
-        var sockets = currLobby.GetPlayersWebSockets();
-        foreach (var socket in sockets)
-        {
-            SendMessageAsync(socket, message);
-        }
-    }
-
     public bool TryCreateLobby(string lobbyName, string hostPlayerName, IGameServerService service)
-        => lobbies.TryAdd(lobbyName, new Lobby(lobbyName, hostPlayerName, MaxPlayersInLobby, service));
+        => lobbies.TryAdd(lobbyName, new Lobby(lobbyName, hostPlayerName, MaxPlayersInLobby, service, LobbyHub));
 
     public string CanJoin(string lobbyName, string playerName) =>
         !lobbies.TryGetValue(lobbyName, out var lobby)
@@ -131,18 +118,4 @@ public class GameServerService : IGameServerService
 
     public ILobbyService GetLobbyService(string lobby) =>
         lobbies[lobby].GetLobbyService();
-
-    static async void SendMessageAsync(WebSocket webSocket, Message message)
-    {
-        try
-        {
-            var buffer = Strings.getBytes(Message.Serialize(message));
-            await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            // TODO: Handle
-            Debug.WriteLine($"Could not send to lobby {message.lobby}, of type {message.type}. Error: {ex.Message}");
-        }
-    }
 }

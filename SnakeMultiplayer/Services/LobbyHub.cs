@@ -26,9 +26,13 @@ public interface IClientHub
 /// </summary>
 public interface IServerHub
 {
-    Task SendPlayerStatusUpdate(string lobby);
     Task SendArenaStatusUpdate(string looby, ArenaStatus status);
-    Task EndGame();
+    Task EndGame(string lobby);
+    Task ExitGame(string lobby, string reason);
+    Task InitiateGameStart(string lobby, ArenaStatus report);
+    Task SendPlayerStatusUpdate(string lobby, Message message);
+    Task SendSettingsUpdate(string lobby, Settings settings);
+    Task SendLobbyMessage(string lobby, Message message);
 }
 
 public class LobbyHub : Hub, IClientHub, IServerHub
@@ -38,6 +42,10 @@ public class LobbyHub : Hub, IClientHub, IServerHub
         public const string OnSettingsUpdate = "OnSettingsUpdate";
         public const string OnPlayerStatusUpdate = "OnPlayerStatusUpdate";
         public const string OnPing = "OnPing";
+        public const string OnGameEnd = "OnGameEnd";
+        public const string OnLobbyMessage = "OnLobbyMessage";
+        public const string OnGameStart = "OnGameStart";
+        public const string OnArenaStatusUpdate = "ArenaStatusUpdate";
     }
 
     string PlayerName
@@ -60,6 +68,8 @@ public class LobbyHub : Hub, IClientHub, IServerHub
 
     readonly IGameServerService GameServer;
 
+    public LobbyHub() { }
+
     public LobbyHub(IGameServerService gameServer)
     {
         GameServer = gameServer;
@@ -76,22 +86,23 @@ public class LobbyHub : Hub, IClientHub, IServerHub
 
     public async Task JoinLobby(string lobby, string playerName)
     {
-        await Groups.AddToGroupAsync(this.Context.ConnectionId, lobby);
+        await Groups.AddToGroupAsync(Context.ConnectionId, lobby);
         GameServer.AddPlayerToLobby(LobbyName, PlayerName, default);
         LobbyName = lobby;
         PlayerName = playerName;
         LobbyService = GameServer.GetLobbyService(lobby);
-        await (this as IServerHub).SendPlayerStatusUpdate(LobbyName);
+        var message = LobbyService.CreatePlayerStatusMessage();
+        await (this as IServerHub).SendPlayerStatusUpdate(LobbyName, message);
     }
 
     public async Task UpdateLobbySettings(Message message)
     {
+        //TODO: Check if player is host
         if (message.type == "Settings")
         {
             var settings = Settings.Deserialize(message.body);
             settings = LobbyService.SetSettings(settings);
-            var update = new Message("server", LobbyName, "Settings", new { Settings = settings });
-            await Clients.Group(LobbyName).SendAsync(ClientMethod.OnSettingsUpdate, update);
+            await (this as IServerHub).SendSettingsUpdate(LobbyName, settings);
         }
     }
 
@@ -101,25 +112,50 @@ public class LobbyHub : Hub, IClientHub, IServerHub
     public void UpdatePlayerState(Message message) =>
         LobbyService.HandleMessage(message);
 
-    async Task IServerHub.SendPlayerStatusUpdate(string lobby)
+    async Task IServerHub.SendPlayerStatusUpdate(string lobby, Message message)
     {
-        var status = LobbyService.CreatePlayerStatusMessage();
-        await Clients.Group(lobby).SendAsync(ClientMethod.OnPlayerStatusUpdate, status);
+        await Clients.Group(lobby).SendAsync(ClientMethod.OnPlayerStatusUpdate, message);
     }
 
-    Task IServerHub.SendArenaStatusUpdate(string looby, ArenaStatus status)
+    async Task IServerHub.InitiateGameStart(string lobby, ArenaStatus report)
     {
-        return Task.CompletedTask;
+        var message = new Message("server", lobby, "Start", new { Start = report });
+        await Clients.Group(lobby).SendAsync(ClientMethod.OnGameStart, message);
     }
 
-    Task IServerHub.EndGame()
+    async Task IServerHub.SendArenaStatusUpdate(string lobby, ArenaStatus status)
     {
-        return Task.CompletedTask;
+        var message = new Message("server", lobby, "Update", new { status });
+        await Clients.Group(lobby).SendAsync(ClientMethod.OnArenaStatusUpdate, message);
+    }
+
+    async Task IServerHub.SendSettingsUpdate(string lobby, Settings settings)
+    {
+        var message = new Message("server", LobbyName, "Settings", new { Settings = settings });
+        await Clients.Group(lobby).SendAsync(ClientMethod.OnSettingsUpdate, message);
+    }
+
+    async Task IServerHub.EndGame(string lobby)
+    {
+        var message = new Message("server", lobby, "End", null);
+        await Clients.Group(lobby).SendAsync(ClientMethod.OnGameEnd, message);
+    }
+
+    async Task IServerHub.ExitGame(string lobby, string reason)
+    {
+        var message = new Message("server", lobby, "Exit", new { message = reason });
+        await Clients.Group(lobby).SendAsync(ClientMethod.OnPlayerStatusUpdate, message);
+    }
+
+    public async Task SendLobbyMessage(string lobby, Message message)
+    {
+        await Clients.Group(lobby).SendAsync(ClientMethod.OnLobbyMessage, message);
     }
 
     T GetContextItemOrDefault<T>(string key) =>
-        this.Context.Items.TryGetValue(key, out var item)
+        Context.Items.TryGetValue(key, out var item)
         ? (T)item
         : default;
+
 }
 
