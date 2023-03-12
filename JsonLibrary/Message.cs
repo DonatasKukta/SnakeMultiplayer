@@ -10,6 +10,7 @@ public class Message
     public dynamic body { get; set; }
 
     public Message() { }
+
     public Message(string sender, string lobby, string type, dynamic body)
     {
         this.sender = sender;

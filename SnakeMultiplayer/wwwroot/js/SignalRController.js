@@ -8,13 +8,14 @@
             .withUrl("/LobbyHub")
             .configureLogging(signalR.LogLevel.Information)
             .build();
+
+        this.connection.on("OnPing", () => this.onPing());
+        this.connection.on("OnSettingsUpdate", (message) => this.onMessage(message));
+        this.connection.on("OnPlayerStatusUpdate", (message) => this.onMessage(message));
+        this.connection.onclose(this.onClose);
     }
 
     async connect() {
-        this.connection.on("OnPing", this.onPing);
-        this.connection.on("OnSettingsUpdate", this.onMessage);
-        this.connection.on("OnPlayerStatusUpdate", this.onMessage);
-        this.connection.onclose(this.onClose);
         try {
             console.warn("SignalR Connecting.");
             //this.connection.start()
@@ -42,7 +43,6 @@
     }
 
     onClose(event) {
-        console.log("Connection closed. Code:" + htmlEscape(event.code) + ".Reason: " + htmlEscape(event.reason));
         this.dispatcher.dispatch("onSocketClose", event);
     }
 
@@ -52,9 +52,9 @@
     }
 
     // Methods invoked by server
-    onMessage(event) {
-        console.warn("SignalR received event:", event);
-        var MessageObject = JSON.parse(event.data);
+    onMessage(MessageObject) {
+        console.warn("SignalR received event:", MessageObject);
+        console.warn("onMessage:dispatcher", this.dispatcher);
         this.dispatcher.dispatch("onSocketMessage", MessageObject);
     }
 
@@ -64,11 +64,14 @@
     }
 
     updateLobbySettings(settings) {
+        console.warn("UpdateLobbySettings:dispatcher", this.dispatcher);
+        console.warn("UpdateLobbySettings:connection", this.connection);
         this.connection.invoke("UpdateLobbySettings", this.wrapMessage("Settings", settings));
+        console.warn("UpdateLobbySettings:end");
     }
 
     initiateGameStart() {
-        this.connection.invoke("InitiateGameStart", this.wrapMessage("Start", message));
+        this.connection.invoke("InitiateGameStart", this.wrapMessage("Start"));
     }
 
     updatePlayerState(direction) {

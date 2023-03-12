@@ -4,9 +4,9 @@ namespace JsonLibrary.FromClient;
 
 public class Settings
 {
-    public int cellCount;
-    public bool? isWall;
-    public string speed;
+    public int cellCount { get; set; }
+    public bool? isWall { get; set; }
+    public string speed { get; set; }
 
     public Settings(int c, bool w, string s)
     {

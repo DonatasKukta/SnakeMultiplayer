@@ -89,7 +89,7 @@ class GameController {
                 this.HandleUpdate(message.body.status);
                 break;
             case "Settings":
-                this.mainDispatcher.dispatch("onSettingsReceived", message.body.Settings);
+                this.mainDispatcher.dispatch("onSettingsReceived", message.body.settings);
                 break;
             case "Start":
                 // Raise game started event

@@ -40,9 +40,24 @@ public class LobbyHub : Hub, IClientHub, IServerHub
         public const string OnPing = "OnPing";
     }
 
-    string PlayerName;
-    string LobbyName;
-    ILobbyService LobbyService;
+    string PlayerName
+    {
+        get => GetContextItemOrDefault<string>("PlayerName");
+        set => Context.Items["PlayerName"] = value;
+    }
+
+    string LobbyName
+    {
+        get => GetContextItemOrDefault<string>("LobbyName");
+        set => Context.Items["LobbyName"] = value;
+    }
+
+    ILobbyService LobbyService
+    {
+        get => GetContextItemOrDefault<ILobbyService>("LobbyService");
+        set => Context.Items["LobbyService"] = value;
+    }
+
     readonly IGameServerService GameServer;
 
     public LobbyHub(IGameServerService gameServer)
@@ -74,7 +89,6 @@ public class LobbyHub : Hub, IClientHub, IServerHub
         if (message.type == "Settings")
         {
             var settings = Settings.Deserialize(message.body);
-            //TODO: understand why LobbyService is null
             settings = LobbyService.SetSettings(settings);
             var update = new Message("server", LobbyName, "Settings", new { Settings = settings });
             await Clients.Group(LobbyName).SendAsync(ClientMethod.OnSettingsUpdate, update);
@@ -102,5 +116,10 @@ public class LobbyHub : Hub, IClientHub, IServerHub
     {
         return Task.CompletedTask;
     }
+
+    T GetContextItemOrDefault<T>(string key) =>
+        this.Context.Items.TryGetValue(key, out var item)
+        ? (T)item
+        : default;
 }
 
