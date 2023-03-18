@@ -38,23 +38,16 @@
 
 class GameController {
     constructor(playerName, lobbyId, mainDispatcher) {
-        //this.snakes = new Array();
         this.snakes = {};
         this.snakeCount = 0;
-        //this.socket;
         this.mainDispatcher = mainDispatcher;
         this.socketDispatcher = new Dispatcher();
-        //this.socketDispatcher.on("onSocketOpen", this.onOpenedSocket.call(this, event));
         this.socketDispatcher.on("onSocketOpen", this.onOpenedSocket.bind(this));
         this.socketDispatcher.on("onSocketMessage", this.onMessageReceived.bind(this));
         this.socketDispatcher.on("onSocketClose", this.onMessageReceived.bind(this));
         this.socketDispatcher.on("onSocketError", this.onMessageReceived.bind(this));
         this.playerName = playerName;
         this.lobbyId = lobbyId;
-
-        this.socketController = new WebSocketController(this.playerName, this.lobbyId, this.socketDispatcher);
-        this.socketController.connect();
-
         this.signalRController = new SignalRController(this.playerName, this.lobbyId, this.socketDispatcher);
         this.signalRController.connect();
     }
@@ -192,9 +185,10 @@ class GameController {
 
     }
 
+    //TODO: Is this needed?
     sendPlayerListRequest() {
         var messageBody = "";
-        this.socketController.send("Players", JSON.stringify(messageBody));
+        //this.socketController.send("Players", JSON.stringify(messageBody));
     }
 
     sendMovementUpdate(direction) {

@@ -45,7 +45,7 @@ public class LobbyService : ILobbyService
     readonly Arena Arena;
     Timer Timer;
 
-    public LobbyService(string id, string host, int maxPlayers, IGameServerService gameServer, LobbyHub serverHub)
+    public LobbyService(string id, string host, int maxPlayers, IGameServerService gameServer)
     {
         ID = id;
         HostPlayer = host;
@@ -53,20 +53,37 @@ public class LobbyService : ILobbyService
         MaxPlayers = maxPlayers;
         CreationTime = DateTime.Now;
         GameServer = gameServer;
-        ServerHub = serverHub;
         Arena = new Arena(players);
         Timer = null;
         IsTimer = false;
     }
 
-    public string AddPlayer(string playerName) =>
-        IsLobbyFull()
+    public string AddPlayer(string playerName)
+    {
+        var reason = CanJoin(playerName);
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            return reason;
+        }
+
+        if (!players.TryAdd(playerName, new Snake(GetValidPlayerColor())))
+        {
+            return "An error has occured. Please try again later.";
+        }
+
+        return string.Empty;
+    }
+
+    public string CanJoin(string playerName) =>
+        string.IsNullOrWhiteSpace(playerName)
+            ? "Empty (null) player name."
+        : !IsActive()
+            ? $"Lobby {ID} is not active. Please join another lobby"
+        : IsLobbyFull()
             ? "Lobby is full."
         : PlayerExists(playerName)
             ? $"Player {playerName} already exists in lobby"
-        : players.TryAdd(playerName, new Snake(GetValidPlayerColor()))
-            ? string.Empty
-        : "An error has occured. Please try again later.";
+        : string.Empty;
 
     private void EndGame()
     {
@@ -221,6 +238,11 @@ public class LobbyService : ILobbyService
 
     public void RemovePlayer(string playerName)
     {
+        if (playerName == null)
+        {
+            throw new ArgumentNullException(nameof(playerName), "Attempt to remove player with null string.");
+        }
+
         if (playerName == HostPlayer)
         {
             GameServer.RemoveLobby(ID);
@@ -229,26 +251,18 @@ public class LobbyService : ILobbyService
         _ = Arena.ClearSnake(playerName);
         _ = players.TryRemove(playerName, out _);
         var status = GetAllPlayerStatus();
-        //SendLobbyMessage(new Message("server", ID, "Players", new { players = status, removed = playerName }));
         ServerHub.SendLobbyMessage(ID, new Message("server", ID, "Players", new { players = status, removed = playerName }));
     }
 
-    private bool PlayerExists(string playerName)
-    {
-        foreach (var player in players)
-        {
-            if (player.Key.Equals(playerName))
-            {
-                return false;
-            }
-        }
-        return false;
-    }
+    public bool PlayerExists(string playerName) =>
+        playerName == null
+            ? throw new ArgumentNullException(nameof(playerName))
+        : players.ContainsKey(playerName);
 
     public bool IsLobbyFull() => MaxPlayers <= players.Count;
 
-    //TODO: Implement; take into account time of existance. // => players.Count > 0; 
-    public bool IsActive() => true;
+    //TODO: Implement 
+    public bool IsActive() => players.Count > 0;
 
     private PlayerColor GetValidPlayerColor()
     {

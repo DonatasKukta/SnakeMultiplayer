@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-using SnakeMultiplayer.Middlewares;
 using SnakeMultiplayer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,9 +16,7 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 });
 
 builder.Services.AddSingleton<IGameServerService, GameServerService>();
-builder.Services.AddTransient<IWebSocketHandler, WebSocketHandler>();
 builder.Services.AddSignalR();
-// TODO: Fix circular dependency GameServerService <-> LobbyHub
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -29,7 +26,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseWebSockets();
-app.UseMiddleware<WebSocketMiddleware>();
 app.MapHub<LobbyHub>("/LobbyHub");
 
 app.UseHttpsRedirection();

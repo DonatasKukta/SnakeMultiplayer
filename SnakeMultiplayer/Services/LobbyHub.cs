@@ -87,7 +87,7 @@ public class LobbyHub : Hub, IClientHub, IServerHub
     public async Task JoinLobby(string lobby, string playerName)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, lobby);
-        GameServer.AddPlayerToLobby(LobbyName, PlayerName, default);
+        GameServer.AddPlayerToLobby(LobbyName, PlayerName);
         LobbyName = lobby;
         PlayerName = playerName;
         LobbyService = GameServer.GetLobbyService(lobby);

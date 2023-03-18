@@ -21,13 +21,12 @@
     MainDispatcher.on("onWebSocketClosed", redirectToErrorPage.bind(this)); // to be implemented
     MainDispatcher.on("onSettingsReceived", onUpdateSettings.bind(this));
 
-
     var gameController = new GameController(PlayerName, LobbyId, MainDispatcher);
     gameController.setEnvironment();
     gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder));
 
     window.addEventListener('beforeunload', (event) => {
-        gameController.socketController.close();
+        gameController.signalRController.close();
     });
     window.addEventListener('resize', reSet.bind(this), false);
 

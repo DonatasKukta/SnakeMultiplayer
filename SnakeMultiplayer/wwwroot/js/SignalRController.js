@@ -45,6 +45,7 @@
     }
 
     onClose(event) {
+        console.error("onClose event", event);
         this.dispatcher.dispatch("onSocketClose", event);
     }
 
@@ -90,16 +91,13 @@
         };
         return message;
     }
-
+    //TODO: implement
     close() {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.log("Trie to close not connected socket");
-        }
-        this.socket.close(1000, "Closing web socket from client");
-    }
-
-    getSocketState() {
-        return this.socket.readyState;
+        console.log("Tried to close SignalR connection");
+        //if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        //    console.log("Trie to close not connected socket");
+        //}
+        //this.socket.close(1000, "Closing web socket from client");
     }
 }
 
