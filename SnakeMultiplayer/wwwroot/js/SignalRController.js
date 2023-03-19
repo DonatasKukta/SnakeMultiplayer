@@ -12,13 +12,13 @@
         this.connection.on("OnPing", () => this.onPing());
 
         //TODO: Refactor to separate methods
-        this.connection.on("OnSettingsUpdate", (message) => this.onMessage(message));
-        this.connection.on("OnPlayerStatusUpdate", (message) => this.onMessage(message));
-        this.connection.on("OnGameEnd", (message) => this.onMessage(message));
-        this.connection.on("OnLobbyMessage", (message) => this.onMessage(message));
-        this.connection.on("OnGameStart", (message) => this.onMessage(message));
-        this.connection.on("ArenaStatusUpdate", (message) => this.onMessage(message));
-        this.connection.onclose(this.onClose);
+        this.connection.on("OnSettingsUpdate", (message) => this.onMessage("OnSettingsUpdate", message));
+        this.connection.on("OnPlayerStatusUpdate", (message) => this.onMessage("OnPlayerStatusUpdate", message));
+        this.connection.on("OnGameEnd", (message) => this.onMessage("OnGameEnd" ,message));
+        this.connection.on("OnLobbyMessage", (message) => this.onMessage("OnLobbyMessage" ,message));
+        this.connection.on("OnGameStart", (message) => this.onMessage("OnGameStart" ,message));
+        this.connection.on("ArenaStatusUpdate", (message) => this.onMessage("ArenaStatusUpdate" ,message));
+        this.connection.onclose((event) => this.onClose(event));
     }
 
     async connect() {
@@ -31,7 +31,7 @@
             this.onOpen();
         } catch (err) {
             console.log(err);
-            this.onError();
+            this.onError(err);
         }
     }
 
@@ -50,13 +50,13 @@
     }
 
     onError(event) {
-        console.warn("Error occured! ");
+        console.warn("Error occured! ", event);
         this.dispatcher.dispatch("onSocketError", event);
     }
 
     // Methods invoked by server
-    onMessage(MessageObject) {
-        console.warn("SignalR received event:", MessageObject);
+    onMessage(invokedMethod,MessageObject) {
+        console.warn(`Server invoked method ${invokedMethod}:`, MessageObject);
         console.warn("onMessage:dispatcher", this.dispatcher);
         this.dispatcher.dispatch("onSocketMessage", MessageObject);
     }

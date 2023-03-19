@@ -90,7 +90,7 @@ class GameController {
                 // Do count down
 
                 // Initialize positions
-                this.HandleStart(message.body.Start);
+                this.HandleStart(message.body.start);
                 break;
             case "End":
                 // close web socket connection, throw error.
@@ -110,7 +110,7 @@ class GameController {
             this.cellContainer.drawCell(food.x, food.y, "black");
         }
 
-        var snakesArray = startMessage.ActiveSnakes;
+        var snakesArray = startMessage.activeSnakes;
         var i;
         for (i = 0; i < snakesArray.length; i++) {
             var head = snakesArray[i].head;
@@ -133,7 +133,7 @@ class GameController {
             this.cellContainer.drawCell(food.x, food.y, "black");
         }
         // Update active snakes
-        var snakesArray = updateMessage.ActiveSnakes;
+        var snakesArray = updateMessage.activeSnakes;
         var i;
         for (i = 0; i < snakesArray.length; i++) {
             var head = snakesArray[i].head;
@@ -146,7 +146,7 @@ class GameController {
         }
 
         // Unpaint inactive snakes
-        var snakesArray = updateMessage.DisabledSnakes;
+        var snakesArray = updateMessage.disabledSnakes;
         for (i = 0; i < snakesArray.length; i++) {
             var player = snakesArray[i];
 

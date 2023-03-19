@@ -13,12 +13,9 @@ public interface IGameServerService
     string CanJoin(string lobbyName, string playerName);
     ILobbyService GetLobbyService(string lobby);
     List<Tuple<string, string>> GetLobbyStatus();
-    void HandleLobbyMessage(string lobby, Message message);
     bool LobbyExists(string lobbyName);
     bool PlayerExists(string lobbyName, string playerName);
     void RemoveLobby(string lobby);
-    void RemovePlayer(string lobby, string player);
-    void SendPLayerStatusMessage(string lobby);
     bool TryCreateLobby(string lobbyName, string hostPlayerName, IGameServerService service);
 }
 
@@ -47,16 +44,8 @@ public class GameServerService : IGameServerService
         }
     }
 
-    public void SendPLayerStatusMessage(string lobby) =>
-        lobbies[lobby].SendPLayerStatusMessage();
-
-    public void HandleLobbyMessage(string lobby, Message message)
-    {
-        lobbies[lobby].HandleMessage(message);
-    }
-
     public bool TryCreateLobby(string lobbyName, string hostPlayerName, IGameServerService service)
-        => lobbies.TryAdd(lobbyName, new LobbyService(lobbyName, hostPlayerName, MaxPlayersInLobby, this));
+        => lobbies.TryAdd(lobbyName, new LobbyService(lobbyName, hostPlayerName, MaxPlayersInLobby));
 
     public string CanJoin(string lobbyName, string playerName) =>
         !lobbies.TryGetValue(lobbyName, out var lobby)
@@ -76,18 +65,13 @@ public class GameServerService : IGameServerService
         {
             throw new ArgumentNullException(nameof(lobby), "Tried to remove null lobby from lobby dictionary");
         }
-
-        if (lobbies.ContainsKey(lobby))
-        {
-            lobbies[lobby].SendCloseLobbyMessage("Host has left the lobby.\n Please create new or join another lobby.");
-        }
+        // TODO: Move up
+        //if (lobbies.ContainsKey(lobby))
+        //{
+        //    lobbies[lobby].SendCloseLobbyMessage("Host has left the lobby.\n Please create new or join another lobby.");
+        //}
 
         _ = lobbies.TryRemove(lobby, out _);
-    }
-
-    public void RemovePlayer(string lobby, string player)
-    {
-        lobbies[lobby].RemovePlayer(player);
     }
 
     public List<Tuple<string, string>> GetLobbyStatus()
