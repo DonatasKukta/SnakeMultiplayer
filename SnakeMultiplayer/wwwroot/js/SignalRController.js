@@ -14,10 +14,10 @@
         //TODO: Refactor to separate methods
         this.connection.on("OnSettingsUpdate", (message) => this.onMessage("OnSettingsUpdate", message));
         this.connection.on("OnPlayerStatusUpdate", (message) => this.onMessage("OnPlayerStatusUpdate", message));
-        this.connection.on("OnGameEnd", (message) => this.onMessage("OnGameEnd" ,message));
-        this.connection.on("OnLobbyMessage", (message) => this.onMessage("OnLobbyMessage" ,message));
-        this.connection.on("OnGameStart", (message) => this.onMessage("OnGameStart" ,message));
-        this.connection.on("ArenaStatusUpdate", (message) => this.onMessage("ArenaStatusUpdate" ,message));
+        this.connection.on("OnGameEnd", (message) => this.onMessage("OnGameEnd", message));
+        this.connection.on("OnLobbyMessage", (message) => this.onMessage("OnLobbyMessage", message));
+        this.connection.on("OnGameStart", (message) => this.onMessage("OnGameStart", message));
+        this.connection.on("OnArenaStatusUpdate", (message) => this.onMessage("OnArenaStatusUpdate", message));
         this.connection.onclose((event) => this.onClose(event));
     }
 
@@ -55,7 +55,7 @@
     }
 
     // Methods invoked by server
-    onMessage(invokedMethod,MessageObject) {
+    onMessage(invokedMethod, MessageObject) {
         console.warn(`Server invoked method ${invokedMethod}:`, MessageObject);
         console.warn("onMessage:dispatcher", this.dispatcher);
         this.dispatcher.dispatch("onSocketMessage", MessageObject);

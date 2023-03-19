@@ -12,9 +12,9 @@ namespace SnakeMultiplayer.Services;
 
 public interface ILobbyService
 {
-    bool IsTimer { get; }
-    LobbyStates State { get; }
+    string ID { get; }
     Speed Speed { get; }
+    LobbyStates State { get; }
 
     int GetPlayerCount();
     bool IsLobbyFull();
@@ -30,16 +30,16 @@ public interface ILobbyService
 
 public class LobbyService : ILobbyService
 {
-    public readonly string ID;
-    public LobbyStates State { get; private set; }
+    public string ID { get; private set; }
     public bool IsTimer { get; private set; }
     public Speed Speed { get => Arena.Speed; }
+    public LobbyStates State { get; private set; }
 
     readonly ConcurrentDictionary<string, Snake> players = new();
 
-    readonly string HostPlayer;
-    readonly int MaxPlayers;
     readonly Arena Arena;
+    readonly int MaxPlayers;
+    readonly string HostPlayer;
 
     public LobbyService(string id, string host, int maxPlayers)
     {
@@ -190,7 +190,7 @@ public class LobbyService : ILobbyService
     public bool IsLobbyFull() => MaxPlayers <= players.Count;
 
     //TODO: Implement 
-    public bool IsActive() => players.Count > 0;
+    public bool IsActive() => true;
 
     private PlayerColor GetValidPlayerColor()
     {

@@ -45,7 +45,7 @@ public class LobbyHub : Hub, IClientHub, IServerHub
         public const string OnGameEnd = "OnGameEnd";
         public const string OnLobbyMessage = "OnLobbyMessage";
         public const string OnGameStart = "OnGameStart";
-        public const string OnArenaStatusUpdate = "ArenaStatusUpdate";
+        public const string OnArenaStatusUpdate = "OnArenaStatusUpdate";
     }
 
     string PlayerName
@@ -66,12 +66,6 @@ public class LobbyHub : Hub, IClientHub, IServerHub
         set => Context.Items["LobbyService"] = value;
     }
 
-    ITimerService TimerService
-    {
-        get => GetContextItemOrDefault<ITimerService>("TimerService");
-        set => Context.Items["TimerService"] = value;
-    }
-
     readonly IGameServerService GameServer;
 
     public LobbyHub(IGameServerService gameServer)
@@ -90,18 +84,17 @@ public class LobbyHub : Hub, IClientHub, IServerHub
 
     public async Task JoinLobby(string lobby, string playerName)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, lobby);
-        GameServer.AddPlayerToLobby(LobbyName, PlayerName);
         LobbyName = lobby;
         PlayerName = playerName;
+        await Groups.AddToGroupAsync(Context.ConnectionId, lobby);
+        GameServer.AddPlayerToLobby(LobbyName, PlayerName);
         LobbyService = GameServer.GetLobbyService(lobby);
         var message = new Message("server", lobby, "Players", new { players = LobbyService.GetAllPlayerStatus() });
-        await (this as IServerHub).SendPlayerStatusUpdate(LobbyName, message);
+        await (this as IServerHub).SendPlayerStatusUpdate(PlayerName, message);
     }
 
     public async Task UpdateLobbySettings(Message message)
     {
-        //TODO: Check if player is host
         if (message.type == "Settings")
         {
             var settings = Settings.Deserialize(message.body);
@@ -112,30 +105,33 @@ public class LobbyHub : Hub, IClientHub, IServerHub
 
     public async Task InitiateGameStart(Message message)
     {
-        TimerService = new TimerService();
+        var lobby = LobbyService;
+        var timerService = new TimerService();
+
         var arenaStatus = LobbyService.InitiateGameStart(message);
-        //start
         await (this as IServerHub).InitiateGameStart(LobbyName, arenaStatus);
-        await Task.Delay(2000);
-        if (LobbyService.Speed != Speed.NoSpeed)
+
+        void endGame()
         {
-            TimerService.StartRound(LobbyService.Speed, OnTimedUpdate);
+            lobby.EndGame();
+            timerService.Stop();
+            (this as IServerHub).SendEndGame(lobby.ID);
         }
+
+        // TODO: Is this needed?
+        await Task.Delay(2000);
+
+        if (lobby.Speed != Speed.NoSpeed)
+            timerService.StartRound(lobby.Speed, () => OnTimedUpdate(lobby, endGame));
     }
 
-    //TODO: Schedule timed updates in background
-    public void OnTimedUpdate()
+    void OnTimedUpdate(ILobbyService lobby, Action endGame)
     {
-        //TODO: error: LobbyHub is disposed at this point
-        var status = LobbyService.UpdateLobbyState();
+        var status = lobby.UpdateLobbyState();
         if (status == null)
-        {
-            LobbyService.EndGame();
-            (this as IServerHub).SendEndGame(LobbyName);
-            return;
-        }
-
-        (this as IServerHub).SendArenaStatusUpdate(LobbyName, status);
+            endGame();
+        else //TODO: this is already disposed?
+            (this as IServerHub).SendArenaStatusUpdate(lobby.ID, status);
     }
 
     public void UpdatePlayerState(Message message) =>
@@ -155,6 +151,7 @@ public class LobbyHub : Hub, IClientHub, IServerHub
     async Task IServerHub.SendArenaStatusUpdate(string lobby, ArenaStatus status)
     {
         var message = new Message("server", lobby, "Update", new { status });
+        Console.WriteLine($"Sending: {Message.Serialize(message)}");
         await Clients.Group(lobby).SendAsync(ClientMethod.OnArenaStatusUpdate, message);
     }
 
