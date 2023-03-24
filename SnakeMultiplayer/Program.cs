@@ -16,6 +16,7 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 });
 
 builder.Services.AddSingleton<IGameServerService, GameServerService>();
+builder.Services.AddSingleton<ITimerService, TimerService>();
 builder.Services.AddSignalR();
 var app = builder.Build();
 

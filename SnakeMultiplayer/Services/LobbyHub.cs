@@ -24,6 +24,7 @@ public interface IClientHub
 /// <summary>
 /// Methods available for Server to call the Clients
 /// </summary>
+//TODO: Implement as adapter for IHubContext<LobbyHub>
 public interface IServerHub
 {
     Task SendArenaStatusUpdate(string looby, ArenaStatus status);
@@ -67,10 +68,12 @@ public class LobbyHub : Hub, IClientHub, IServerHub
     }
 
     readonly IGameServerService GameServer;
+    readonly ITimerService TimerService;
 
-    public LobbyHub(IGameServerService gameServer)
+    public LobbyHub(IGameServerService gameServer, ITimerService timerService)
     {
         GameServer = gameServer;
+        TimerService = timerService;
     }
 
     public async Task Ping()
@@ -106,32 +109,14 @@ public class LobbyHub : Hub, IClientHub, IServerHub
     public async Task InitiateGameStart(Message message)
     {
         var lobby = LobbyService;
-        var timerService = new TimerService();
-
         var arenaStatus = LobbyService.InitiateGameStart(message);
         await (this as IServerHub).InitiateGameStart(LobbyName, arenaStatus);
-
-        void endGame()
-        {
-            lobby.EndGame();
-            timerService.Stop();
-            (this as IServerHub).SendEndGame(lobby.ID);
-        }
 
         // TODO: Is this needed?
         await Task.Delay(2000);
 
         if (lobby.Speed != Speed.NoSpeed)
-            timerService.StartRound(lobby.Speed, () => OnTimedUpdate(lobby, endGame));
-    }
-
-    void OnTimedUpdate(ILobbyService lobby, Action endGame)
-    {
-        var status = lobby.UpdateLobbyState();
-        if (status == null)
-            endGame();
-        else //TODO: this is already disposed?
-            (this as IServerHub).SendArenaStatusUpdate(lobby.ID, status);
+            TimerService.StartRound(LobbyName, lobby.Speed);
     }
 
     public void UpdatePlayerState(Message message) =>
