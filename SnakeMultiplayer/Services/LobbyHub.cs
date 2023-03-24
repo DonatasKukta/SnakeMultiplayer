@@ -45,8 +45,11 @@ public class LobbyHub : Hub
         await Clients.All.SendAsync("Ping", DateTime.Now);
     }
 
-    public override Task OnDisconnectedAsync(Exception? exception) =>
-        base.OnDisconnectedAsync(exception);
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        //TODO: Remove player from lobby
+        return base.OnDisconnectedAsync(exception);
+    }
 
     public async Task JoinLobby(string lobby, string playerName)
     {
@@ -84,12 +87,24 @@ public class LobbyHub : Hub
 
         await Task.Delay(2000);
 
-        if (LobbyService.Speed != Speed.NoSpeed)
-            TimerService.StartRound(LobbyName, LobbyService.Speed);
+        if (!LobbyService.IsNoSpeed)
+            TimerService.StartGame(LobbyName, LobbyService.Speed);
     }
 
-    public void UpdatePlayerState(MoveDirection direction) =>
+    public void UpdatePlayerState(MoveDirection direction)
+    {
         LobbyService.OnPlayerUpdate(PlayerName, direction);
+
+        if (!LobbyService.IsNoSpeed)
+            return;
+
+        var status = LobbyService.UpdateLobbyState();
+
+        if (status == null)
+            _ = ServerHub.SendEndGame(LobbyName);
+        else
+            _ = ServerHub.SendArenaStatusUpdate(LobbyName, status);
+    }
 
     T GetContextItemOrDefault<T>(string key) =>
         Context.Items.TryGetValue(key, out var item)

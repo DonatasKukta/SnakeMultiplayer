@@ -14,6 +14,7 @@ public interface ILobbyService
     LobbyStates State { get; }
     Speed Speed { get; }
     string ID { get; }
+    public bool IsNoSpeed { get; }
 
     int GetPlayerCount();
     bool IsLobbyFull();
@@ -34,6 +35,7 @@ public class LobbyService : ILobbyService
     public LobbyStates State { get; private set; }
     public bool IsTimer { get; private set; }
     public Speed Speed { get => Arena.Speed; }
+    public bool IsNoSpeed { get => Arena.Speed == Speed.NoSpeed; }
 
     readonly ConcurrentDictionary<string, Snake> players = new();
 
