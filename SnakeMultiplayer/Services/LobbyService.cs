@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-using JsonLibrary;
 using JsonLibrary.FromClient;
 using JsonLibrary.FromServer;
 
@@ -19,13 +18,14 @@ public interface ILobbyService
     int GetPlayerCount();
     bool IsLobbyFull();
     bool IsActive();
+    bool IsHost(string playerName);
     List<Player> GetAllPlayerStatus();
     void EndGame();
     ArenaStatus UpdateLobbyState();
     string AddPlayer(string playerName);
-    void OnPlayerUpdate(Message message);
+    void OnPlayerUpdate(string player, MoveDirection message);
     Settings SetSettings(Settings settings);
-    ArenaStatus InitiateGameStart(Message message);
+    ArenaStatus InitiateGameStart();
 }
 
 public class LobbyService : ILobbyService
@@ -66,6 +66,8 @@ public class LobbyService : ILobbyService
         return string.Empty;
     }
 
+    public bool IsHost(string playerName) => playerName == HostPlayer;
+
     public string CanJoin(string playerName) =>
         string.IsNullOrWhiteSpace(playerName)
             ? "Empty (null) player name."
@@ -80,13 +82,6 @@ public class LobbyService : ILobbyService
     public void EndGame()
     {
         State = LobbyStates.Idle;
-    }
-
-    private string InitializeGame()
-    {
-        State = LobbyStates.Initialized;
-        var error = Arena.PrepareForNewGame();
-        return error;
     }
 
     public ArenaStatus UpdateLobbyState()
@@ -135,28 +130,23 @@ public class LobbyService : ILobbyService
         return list;
     }
 
-    public ArenaStatus InitiateGameStart(Message message)
+    public ArenaStatus InitiateGameStart()
     {
-        if (message.sender.Equals(HostPlayer) && State.Equals(LobbyStates.Idle))
-        {
-            Debug.WriteLine($"Game initialised in {ID} lobby.");
-            _ = InitializeGame();
-            State = LobbyStates.inGame;
-            return Arena.GenerateReport();
-        }
+        if (!State.Equals(LobbyStates.Idle))
+            throw new Exception($"Tried to initialise game start while lobby {ID} is in Idle state.");
 
-        throw new Exception($"Incorrect game start message: {Message.Serialize(message)}");
+        State = LobbyStates.Initialized;
+        _ = Arena.PrepareForNewGame();
+        State = LobbyStates.inGame;
+
+        Debug.WriteLine($"Game initialised in {ID} lobby.");
+        return Arena.GenerateReport();
     }
 
-    public void OnPlayerUpdate(Message message)
+    public void OnPlayerUpdate(string player, MoveDirection direction)
     {
-        if (!State.Equals(LobbyStates.inGame))
-        {
-            return;
-        }
-
-        var direction = (MoveDirection)message.body.GetInt32();
-        Arena.SetPendingAction(message.sender, direction);
+        if (State.Equals(LobbyStates.inGame))
+            Arena.SetPendingAction(player, direction);
     }
 
     public Settings SetSettings(Settings settings) => Arena.SetSettings(settings);

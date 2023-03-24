@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 
-using JsonLibrary;
 using JsonLibrary.FromClient;
 
 using Microsoft.AspNetCore.SignalR;
@@ -60,32 +60,36 @@ public class LobbyHub : Hub
         await ServerHub.SendPlayerStatusUpdate(LobbyName, players);
     }
 
-    public async Task UpdateLobbySettings(Message message)
+    public async Task UpdateLobbySettings(JsonElement input)
     {
-        if (message.type == "Settings")
-        {
-            var settings = Settings.Deserialize(message.body);
-            settings = LobbyService.SetSettings(settings);
-            await ServerHub.SendSettingsUpdate(LobbyName, settings);
-        }
+        if (!LobbyService.IsHost(PlayerName))
+            return;
+        var settingsStr = input.GetRawText();
+
+        var settings = Settings.Deserialize(settingsStr);
+        if (settings == null)
+            return;
+
+        var newSettings = LobbyService.SetSettings(settings);
+        await ServerHub.SendSettingsUpdate(LobbyName, newSettings);
     }
 
-    public async Task InitiateGameStart(Message message)
+    public async Task InitiateGameStart()
     {
-        var lobby = LobbyService;
-        var arenaStatus = LobbyService.InitiateGameStart(message);
+        if (!LobbyService.IsHost(PlayerName))
+            return;
+
+        var arenaStatus = LobbyService.InitiateGameStart();
         await ServerHub.InitiateGameStart(LobbyName, arenaStatus);
 
-        // TODO: Is this needed?
         await Task.Delay(2000);
 
-        if (lobby.Speed != Speed.NoSpeed)
-            TimerService.StartRound(LobbyName, lobby.Speed);
+        if (LobbyService.Speed != Speed.NoSpeed)
+            TimerService.StartRound(LobbyName, LobbyService.Speed);
     }
 
-    public void UpdatePlayerState(Message message) =>
-        LobbyService.OnPlayerUpdate(message);
-
+    public void UpdatePlayerState(MoveDirection direction) =>
+        LobbyService.OnPlayerUpdate(PlayerName, direction);
 
     T GetContextItemOrDefault<T>(string key) =>
         Context.Items.TryGetValue(key, out var item)

@@ -45,7 +45,7 @@
     }
 
     onClose(event) {
-        console.error("onClose event", event);
+        console.warn("onClose event", event);
         this.dispatcher.dispatch("onSocketClose", event);
     }
 
@@ -67,30 +67,17 @@
     }
 
     updateLobbySettings(settings) {
-        console.warn("UpdateLobbySettings:dispatcher", this.dispatcher);
-        console.warn("UpdateLobbySettings:connection", this.connection);
-        this.connection.invoke("UpdateLobbySettings", this.wrapMessage("Settings", settings));
-        console.warn("UpdateLobbySettings:end");
+        this.connection.invoke("UpdateLobbySettings", settings);
     }
 
     initiateGameStart() {
-        this.connection.invoke("InitiateGameStart", this.wrapMessage("Start"));
+        this.connection.invoke("InitiateGameStart");
     }
 
     updatePlayerState(direction) {
-        this.connection.invoke("UpdatePlayerState", this.wrapMessage("Update", direction));
+        this.connection.invoke("UpdatePlayerState", direction);
     }
 
-    // Helpers
-    wrapMessage(messageType, messageBody) {
-        var message = {
-            sender: this.playerName,
-            lobby: this.lobbyId,
-            type: messageType,
-            body: messageBody
-        };
-        return message;
-    }
     //TODO: implement
     close() {
         console.log("Tried to close SignalR connection");
@@ -101,11 +88,3 @@
     }
 }
 
-function htmlEscape(str) {
-    return str.toString()
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-}

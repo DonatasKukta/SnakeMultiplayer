@@ -15,7 +15,7 @@ public class Settings
         speed = s;
     }
 
-    public static Message Deserialize(string json) => JsonConvert.DeserializeObject<Message>(json);
+    public static Settings Deserialize(string json) => JsonConvert.DeserializeObject<Settings>(json);
     public static string Serialize(Message m) => JsonConvert.SerializeObject(m);
     public static Settings Deserialize(object jsonObj) => JsonConvert.DeserializeObject<Settings>(jsonObj.ToString());
 }

@@ -19,6 +19,7 @@ builder.Services.AddSingleton<IGameServerService, GameServerService>();
 builder.Services.AddSingleton<ITimerService, TimerService>();
 builder.Services.AddTransient<IServerHub, ServerHub>();
 builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
