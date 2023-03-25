@@ -4,9 +4,9 @@ namespace JsonLibrary.FromClient;
 
 public class Settings
 {
-    public int cellCount;
-    public bool? isWall;
-    public string speed;
+    public int cellCount { get; set; }
+    public bool? isWall { get; set; }
+    public string speed { get; set; }
 
     public Settings(int c, bool w, string s)
     {
@@ -15,7 +15,7 @@ public class Settings
         speed = s;
     }
 
-    public static Message Deserialize(string json) => JsonConvert.DeserializeObject<Message>(json);
+    public static Settings Deserialize(string json) => JsonConvert.DeserializeObject<Settings>(json);
     public static string Serialize(Message m) => JsonConvert.SerializeObject(m);
     public static Settings Deserialize(object jsonObj) => JsonConvert.DeserializeObject<Settings>(jsonObj.ToString());
 }

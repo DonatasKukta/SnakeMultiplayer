@@ -7,9 +7,9 @@ namespace JsonLibrary.FromServer;
 [JsonObject]
 public class ArenaStatus
 {
-    public List<Snake> ActiveSnakes;
-    public List<string> DisabledSnakes;
-    public XY food;
+    public List<Snake> ActiveSnakes { get; set; }
+    public List<string> DisabledSnakes { get; set; }
+    public XY food { get; set; }
 
     public ArenaStatus(XY food)
     {
@@ -28,10 +28,10 @@ public class ArenaStatus
 [JsonObject]
 public class Snake
 {
-    public string player;
-    public string color;
-    public XY head;
-    public XY tail;
+    public string player { get; set; }
+    public string color { get; set; }
+    public XY head { get; set; }
+    public XY tail { get; set; }
     public Snake(string player, string color, XY head, XY tail)
     {
         this.player = player;
@@ -43,8 +43,8 @@ public class Snake
 [JsonObject]
 public class XY
 {
-    public int x;
-    public int y;
+    public int x { get; set; }
+    public int y { get; set; }
     public XY(int x, int y)
     {
         this.x = x;

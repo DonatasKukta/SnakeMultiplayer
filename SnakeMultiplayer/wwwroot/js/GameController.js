@@ -9,7 +9,7 @@
         this.currDirection = MoveDirection.Down;
         this.body.addFirst(new Cell(baseCell.size, this.color, baseCell.outlineColor, x, y));
     }
-    
+
     // Always returns added head coordinates AND deleted tail coordinates.
     update(direction, isFood) {
         var newHead = this.body.getFirst().getCopy();
@@ -38,23 +38,18 @@
 
 class GameController {
     constructor(playerName, lobbyId, mainDispatcher) {
-        //this.snakes = new Array();
         this.snakes = {};
         this.snakeCount = 0;
-        //this.socket;
         this.mainDispatcher = mainDispatcher;
         this.socketDispatcher = new Dispatcher();
-        //this.socketDispatcher.on("onSocketOpen", this.onOpenedSocket.call(this, event));
         this.socketDispatcher.on("onSocketOpen", this.onOpenedSocket.bind(this));
         this.socketDispatcher.on("onSocketMessage", this.onMessageReceived.bind(this));
         this.socketDispatcher.on("onSocketClose", this.onMessageReceived.bind(this));
         this.socketDispatcher.on("onSocketError", this.onMessageReceived.bind(this));
         this.playerName = playerName;
         this.lobbyId = lobbyId;
-
-        this.socketController = new WebSocketController(this.playerName, this.lobbyId, this.socketDispatcher);
-        this.socketController.connect();
-        //this.connect();
+        this.signalRController = new SignalRController(this.playerName, this.lobbyId, this.socketDispatcher);
+        this.signalRController.connect();
     }
 
     onOpenedSocket(e) {
@@ -87,7 +82,7 @@ class GameController {
                 this.HandleUpdate(message.body.status);
                 break;
             case "Settings":
-                this.mainDispatcher.dispatch("onSettingsReceived", message.body.Settings);
+                this.mainDispatcher.dispatch("onSettingsReceived", message.body.settings);
                 break;
             case "Start":
                 // Raise game started event
@@ -95,7 +90,7 @@ class GameController {
                 // Do count down
 
                 // Initialize positions
-                this.HandleStart(message.body.Start);
+                this.HandleStart(message.body.start);
                 break;
             case "End":
                 // close web socket connection, throw error.
@@ -115,7 +110,7 @@ class GameController {
             this.cellContainer.drawCell(food.x, food.y, "black");
         }
 
-        var snakesArray = startMessage.ActiveSnakes;
+        var snakesArray = startMessage.activeSnakes;
         var i;
         for (i = 0; i < snakesArray.length; i++) {
             var head = snakesArray[i].head;
@@ -138,7 +133,7 @@ class GameController {
             this.cellContainer.drawCell(food.x, food.y, "black");
         }
         // Update active snakes
-        var snakesArray = updateMessage.ActiveSnakes;
+        var snakesArray = updateMessage.activeSnakes;
         var i;
         for (i = 0; i < snakesArray.length; i++) {
             var head = snakesArray[i].head;
@@ -151,7 +146,7 @@ class GameController {
         }
 
         // Unpaint inactive snakes
-        var snakesArray = updateMessage.DisabledSnakes;
+        var snakesArray = updateMessage.disabledSnakes;
         for (i = 0; i < snakesArray.length; i++) {
             var player = snakesArray[i];
 
@@ -190,28 +185,27 @@ class GameController {
 
     }
 
+    //TODO: Is this needed?
     sendPlayerListRequest() {
         var messageBody = "";
-        this.socketController.send("Players", JSON.stringify(messageBody));
+        //this.socketController.send("Players", JSON.stringify(messageBody));
     }
 
     sendMovementUpdate(direction) {
-        this.socketController.send("Update", JSON.stringify(direction));
+        this.signalRController.updatePlayerState(direction);
     }
 
     sendGameStart() {
-        this.socketController.send("Start", null);
+        this.signalRController.initiateGameStart();
     }
 
     sendSettingUpdate(settings) {
-        //var settings = { cellCount : this.cellContainer.gridSize, isWall: false };
-
-        this.socketController.send("Settings", settings);
+        this.signalRController.updateLobbySettings(settings);
     }
 
     drawSnakes() {
 
-        for(var key in this.snakes) {
+        for (var key in this.snakes) {
             var snake = this.snakes[key];
             if (snake != null) {
                 this.cellContainer.initializeSnake(this.snakes[key].getBodyArray(), this.snakes[key].color);

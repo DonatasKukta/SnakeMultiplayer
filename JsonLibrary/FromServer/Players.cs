@@ -7,7 +7,8 @@ namespace JsonLibrary.FromServer;
 [JsonObject]
 public class Players
 {
-    public List<Player> players;
+    public List<Player> players { get; set; }
+
     public Players(List<Player> p)
     {
         players = p;
@@ -16,10 +17,11 @@ public class Players
     public static Players Deserialize(string json) => JsonConvert.DeserializeObject<Players>(json);
     public static string Serialize(Players m) => JsonConvert.SerializeObject(m);
 }
+
 [JsonObject]
 public class Player
 {
-    public string name;
-    public string color;
-    public string type;
+    public string name { get; set; }
+    public string color { get; set; }
+    public string type { get; set; }
 }

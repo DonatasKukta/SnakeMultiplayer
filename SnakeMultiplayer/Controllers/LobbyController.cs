@@ -16,7 +16,7 @@ public class LobbyController : Controller
     public IActionResult CreateLobby() => View();
 
     [HttpPost]
-    public IActionResult CreateLobby([FromServices] GameServerService gameServer, string id = "", string playerName = "")
+    public IActionResult CreateLobby([FromServices] IGameServerService gameServer, string id = "", string playerName = "")
     {
         ViewData["playerName"] = playerName;
         ViewData["lobbyId"] = id;
@@ -28,17 +28,17 @@ public class LobbyController : Controller
             return View();
         }
 
-        if (gameServer.TryCreateLobby(id, playerName, gameServer))
+        if (!gameServer.TryCreateLobby(id, playerName, gameServer))
         {
-            SetCookie("PlayerName", playerName);
-            SetCookie("LobbyId", id);
-            ViewData["IsHost"] = true;
-            return View("Views/Lobby/Index.cshtml");
+            ViewData["ErrorMessage"] = $"Lobby with {id} already exists. Please enter different name";
+            return View();
         }
 
-        ViewData["ErrorMessage"] = $"Lobby with {id} already exists. Please enter different name";
+        SetCookie("PlayerName", playerName);
+        SetCookie("LobbyId", id);
+        ViewData["IsHost"] = true;
 
-        return View();
+        return View("Views/Lobby/Index.cshtml");
     }
 
     [HttpGet]
@@ -49,7 +49,7 @@ public class LobbyController : Controller
     }
 
     [HttpPost]
-    public IActionResult JoinLobby([FromServices] GameServerService gameServer, string id = "", string playerName = "")
+    public IActionResult JoinLobby([FromServices] IGameServerService gameServer, string id = "", string playerName = "")
     {
         ViewData["playerName"] = playerName;
         ViewData["lobbyId"] = id;
@@ -76,7 +76,7 @@ public class LobbyController : Controller
     }
 
     [HttpGet]
-    public IActionResult Status([FromServices] GameServerService gameServer)
+    public IActionResult Status([FromServices] IGameServerService gameServer)
     {
         ViewData["Lobbies"] = gameServer.GetLobbyStatus();
 
