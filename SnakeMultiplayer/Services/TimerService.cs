@@ -43,10 +43,7 @@ namespace SnakeMultiplayer.Services
             var status = lobby.UpdateLobbyState();
 
             if (status == null)
-            {
-                lobby.EndGame();
                 EndGame(lobby.ID);
-            }
             else
                 _ = ServerHub.SendArenaStatusUpdate(lobby.ID, status);
         }
@@ -55,6 +52,8 @@ namespace SnakeMultiplayer.Services
         {
             GetTimer(lobby)?.Stop();
             _ = Timers.Remove(lobby);
+
+            GameServer.EndGame(lobby);
             _ = ServerHub.SendEndGame(lobby);
         }
     }

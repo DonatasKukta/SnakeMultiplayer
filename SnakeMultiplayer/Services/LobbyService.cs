@@ -27,6 +27,7 @@ public interface ILobbyService
     void OnPlayerUpdate(string player, MoveDirection message);
     Settings SetSettings(Settings settings);
     ArenaStatus InitiateGameStart();
+    List<Player> RemovePlayer(string playerName);
 }
 
 public class LobbyService : ILobbyService
@@ -159,18 +160,16 @@ public class LobbyService : ILobbyService
         {
             throw new ArgumentNullException(nameof(playerName), "Attempt to remove player with null string.");
         }
-        // TODO: Move up
-        //if (playerName == HostPlayer)
-        //{
-        //    GameServer.RemoveLobby(ID);
-        //}
+
+        if (!PlayerExists(playerName))
+            return GetAllPlayerStatus();
+
+        if (playerName == HostPlayer)
+            return null;
 
         _ = Arena.ClearSnake(playerName);
         _ = players.TryRemove(playerName, out _);
         return GetAllPlayerStatus();
-
-        //TODO: Move up
-        //ServerHub.SendLobbyMessage(ID, new Message("server", ID, "Players", new { players = status, removed = playerName }));
     }
 
     public bool PlayerExists(string playerName) =>

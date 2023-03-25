@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -47,7 +48,21 @@ public class LobbyHub : Hub
 
     public override Task OnDisconnectedAsync(Exception? exception)
     {
-        //TODO: Remove player from lobby
+        if (LobbyService == null)
+            return base.OnDisconnectedAsync(exception);
+
+        var players = LobbyService.RemovePlayer(PlayerName);
+
+        if (players == null)
+        {
+            GameServer.RemoveLobby(LobbyName);
+            ServerHub.ExitGame(LobbyName, "Host player left the game.");
+        }
+        else if (players.Any())
+            ServerHub.SendPlayerStatusUpdate(LobbyName, players, PlayerName);
+        else
+            ServerHub.SendEndGame(LobbyName);
+
         return base.OnDisconnectedAsync(exception);
     }
 

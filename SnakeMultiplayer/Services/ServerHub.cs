@@ -19,8 +19,8 @@ public interface IServerHub
     Task SendEndGame(string lobby);
     Task ExitGame(string lobby, string reason);
     Task InitiateGameStart(string lobby, ArenaStatus report);
-    Task SendPlayerStatusUpdate(string lobby, List<Player> players);
     Task SendSettingsUpdate(string lobby, Settings settings);
+    Task SendPlayerStatusUpdate(string lobby, List<Player> players, string removedlayerName = null);
 }
 
 static class ClientMethod
@@ -43,9 +43,9 @@ public class ServerHub : IServerHub
         HubContext = hubContext;
     }
 
-    public Task SendPlayerStatusUpdate(string lobby, List<Player> players)
+    public Task SendPlayerStatusUpdate(string lobby, List<Player> players, string removedPlayerName = null)
     {
-        var message = new Message("server", lobby, "Players", new { players });
+        var message = new Message("server", lobby, "Players", new { players, removed = removedPlayerName });
         return HubContext.Clients.Group(lobby).SendAsync(ClientMethod.OnPlayerStatusUpdate, message);
     }
 

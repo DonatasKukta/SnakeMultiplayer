@@ -3,14 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-using JsonLibrary;
-
 namespace SnakeMultiplayer.Services;
 
 public interface IGameServerService
 {
     string AddPlayerToLobby(string lobby, string player);
     string CanJoin(string lobbyName, string playerName);
+    void EndGame(string lobby);
     ILobbyService GetLobbyService(string lobby);
     List<Tuple<string, string>> GetLobbyStatus();
     bool LobbyExists(string lobbyName);
@@ -59,17 +58,16 @@ public class GameServerService : IGameServerService
             ? lobby.PlayerExists(playerName)
         : throw new EntryPointNotFoundException($"Lobby {lobbyName} does not exists");
 
+    public void EndGame(string lobby)
+    {
+        if (lobbies.TryGetValue(lobby, out var lobbyService))
+            lobbyService.EndGame();
+    }
+
     public void RemoveLobby(string lobby)
     {
         if (lobby == null)
-        {
             throw new ArgumentNullException(nameof(lobby), "Tried to remove null lobby from lobby dictionary");
-        }
-        // TODO: Move up
-        //if (lobbies.ContainsKey(lobby))
-        //{
-        //    lobbies[lobby].SendCloseLobbyMessage("Host has left the lobby.\n Please create new or join another lobby.");
-        //}
 
         _ = lobbies.TryRemove(lobby, out _);
     }
