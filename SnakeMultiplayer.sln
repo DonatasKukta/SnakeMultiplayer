@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.539
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33414.496
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SnakeMultiplayer", "SnakeMultiplayer\SnakeMultiplayer.csproj", "{CC244C00-40E2-49EC-A071-D03D4E31D2E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonLibrary", "JsonLibrary\JsonLibrary.csproj", "{D5863BDA-0F46-4D90-9094-1192ECD90B24}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonLibrary", "JsonLibrary\JsonLibrary.csproj", "{D5863BDA-0F46-4D90-9094-1192ECD90B24}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Domain", "Domain\Domain.fsproj", "{6E0D705A-1DFC-482A-B41F-836E1D947E5B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{D5863BDA-0F46-4D90-9094-1192ECD90B24}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5863BDA-0F46-4D90-9094-1192ECD90B24}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5863BDA-0F46-4D90-9094-1192ECD90B24}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E0D705A-1DFC-482A-B41F-836E1D947E5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E0D705A-1DFC-482A-B41F-836E1D947E5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E0D705A-1DFC-482A-B41F-836E1D947E5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E0D705A-1DFC-482A-B41F-836E1D947E5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

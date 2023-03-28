@@ -67,7 +67,7 @@ public class Snake
 
     public Coordinate CloneHead() =>
         body == null || body.First.Value == null
-        ? null
+            ? null
         : body.First.Value.Clone();
 
     public List<Coordinate> GetCoordinates() => body?.ToList<Coordinate>();
