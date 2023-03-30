@@ -54,19 +54,16 @@ type Arena =
       food: Food }
 
 module Functions =
-
+    let random = System.Random()
     let firstFrom = List.tryHead
     let lastFrom = List.tryLast
     let firstAndLast list = (firstFrom list, lastFrom list)
     let itself x = x
 
-    let someFun name =
-        Option.map (fun coords -> (name, coords))
+    let createOptionUnit x = Option.map (fun y -> (x, y))
 
     let setPendingDirection player direction =
         { player with pendingDirection = direction }
-
-    let generateFood previousFood = { X = 0; Y = 0 }
 
     let move snake food =
         let body = snake.body
@@ -90,8 +87,18 @@ module Functions =
         |> Option.map (fun (withFood, newHead) -> { snake with body = newHead :: getNewBody withFood })
         |> Option.defaultValue snake
 
+    let generateFoodAnywhere max =
+        { X = random.Next(0, max)
+          Y = random.Next(0, max) }
+
+    // TODO: This will cause endless loop if all board cells are not empty.
+    let rec generateRandomFood (board: Cell [,]) max =
+        match (random.Next(0, max), random.Next(0, max)) with
+        | (x, y) when board.[x, y] = Cell.Empty -> { X = x; Y = y }
+        | _ -> generateRandomFood board max
 
     let applyPendingDirections (arena: Arena) =
+
         let newPlayers =
             arena.players
             |> Map.map (fun name snake -> move snake arena.food)
@@ -123,22 +130,29 @@ module Functions =
         |> List.ofSeq
         |> List.map (fun pair -> (pair.Key, firstAndLast pair.Value.body))
         |> List.collect (fun (name, coords) ->
-            [ fst coords |> someFun name
-              snd coords |> someFun name ])
+            [ fst coords |> createOptionUnit name
+              snd coords |> createOptionUnit name ])
         |> List.choose itself
         |> List.map updateBoard
         |> List.choose itself
         |> removeEmptyPlayers
-        |> fun arena -> { arena with food = generateFood arena.food }
+        |> fun arena -> { arena with food = generateRandomFood arena.board arena.settings.cellCount }
 
+    let emptyBoard cellCount = Array2D.zeroCreate cellCount cellCount
 
-    let setInitialPositions arena = arena
+    let clearArena arena =
+        { arena with
+            board = emptyBoard arena.settings.cellCount
+            food = generateFoodAnywhere arena.settings.cellCount
+            players =
+                arena.players
+                |> Map.map (fun name snake -> { snake with body = List.empty }) }
 
     let createArena settings =
         { settings = settings
-          board = Array2D.zeroCreate settings.cellCount settings.cellCount
+          board = emptyBoard settings.cellCount
           players = Map.empty
-          food = generateFood <| Some { X = 0; Y = 0 } }
+          food = generateFoodAnywhere settings.cellCount }
 
     let createSnake name coordinate color =
         { name = name
