@@ -55,14 +55,84 @@ type Arena =
 
 module Functions =
 
+    let firstFrom = List.tryHead
+    let lastFrom = List.tryLast
+    let firstAndLast list = (firstFrom list, lastFrom list)
+    let itself x = x
+
+    let someFun name =
+        Option.map (fun coords -> (name, coords))
+
     let setPendingDirection player direction =
         { player with pendingDirection = direction }
 
-    let applyPendingDirections arena = arena
+    let generateFood previousFood = { X = 0; Y = 0 }
+
+    let move snake food =
+        let body = snake.body
+        let head = List.tryHead snake.body
+
+        let update coordinate =
+            function
+            | Direction.Up -> { coordinate with X = coordinate.X + 1 }
+            | Direction.Down -> { coordinate with X = coordinate.X - 1 }
+            | Direction.Left -> { coordinate with Y = coordinate.Y - 1 }
+            | Direction.Right -> { coordinate with Y = coordinate.Y + 1 }
+            | _ -> coordinate
+
+        let getNewBody =
+            function
+            | true -> body
+            | false -> List.take (body.Length - 1) body
+
+        Option.map2 update head snake.pendingDirection
+        |> Option.map (fun newHead -> (newHead = food, newHead))
+        |> Option.map (fun (withFood, newHead) -> { snake with body = newHead :: getNewBody withFood })
+        |> Option.defaultValue snake
+
+
+    let applyPendingDirections (arena: Arena) =
+        let newPlayers =
+            arena.players
+            |> Map.map (fun name snake -> move snake arena.food)
+
+        let updateBoard (name, coord) =
+            match arena.board[coord.X, coord.Y] with
+            | Cell.Snake ->
+                Map.tryFind name newPlayers
+                |> fun snake ->
+                    if Option.isSome snake then
+                        Seq.iter (fun coord -> arena.board[ coord.X, coord.Y ] <- Cell.Empty) snake.Value.body
+                        Some snake.Value.name
+                    else
+                        None
+            | _ ->
+                arena.board[ coord.X, coord.Y ] <- Cell.Snake
+                None
+
+        let removeEmptyPlayers emptyPlayers =
+            emptyPlayers
+            |> List.fold
+                (fun acc name ->
+                    match Map.tryFind name acc.players with
+                    | Some snake -> { acc with players = Map.add name { snake with body = List.empty } acc.players }
+                    | None -> acc)
+                arena
+
+        newPlayers
+        |> List.ofSeq
+        |> List.map (fun pair -> (pair.Key, firstAndLast pair.Value.body))
+        |> List.collect (fun (name, coords) ->
+            [ fst coords |> someFun name
+              snd coords |> someFun name ])
+        |> List.choose itself
+        |> List.map updateBoard
+        |> List.choose itself
+        |> removeEmptyPlayers
+        |> fun arena -> { arena with food = generateFood arena.food }
+
 
     let setInitialPositions arena = arena
-
-    let generateFood previousFood = { X = 0; Y = 0 }
 
     let createArena settings =
         { settings = settings
@@ -82,24 +152,3 @@ module Functions =
             body = List.empty
             pendingDirection = None
             previousDirection = None }
-
-    let update coordinate =
-        function
-        | Direction.Up -> { coordinate with X = coordinate.X + 1 }
-        | Direction.Down -> { coordinate with X = coordinate.X - 1 }
-        | Direction.Left -> { coordinate with Y = coordinate.Y - 1 }
-        | Direction.Right -> { coordinate with Y = coordinate.Y + 1 }
-        | _ -> coordinate
-
-    let move snake food =
-        let body = snake.body
-        let head = List.tryHead snake.body
-
-        let getNewBody =
-            function
-            | true -> body
-            | false -> List.take (body.Length - 1) body
-
-        Option.map2 update head snake.pendingDirection
-        |> Option.map (fun newHead -> (newHead = food, newHead))
-        |> Option.map (fun (isEaten, newHead) -> { snake with body = newHead :: getNewBody isEaten })
