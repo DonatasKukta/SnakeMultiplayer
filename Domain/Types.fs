@@ -12,12 +12,6 @@ type Direction =
     | Down = 3
     | Left = 4
 
-type InitialPosition =
-    | UpLeft
-    | UpRight
-    | DownLeft
-    | DownRight
-
 type Cell =
     | Empty = 0
     | Food = 1
@@ -51,4 +45,6 @@ type Arena =
     { settings: Settings
       board: Cell [,]
       players: Map<string, Snake>
-      food: Food }
+      food: Food
+      maxPlayers: int
+      hostPlayer: string }
