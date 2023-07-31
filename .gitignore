@@ -6,3 +6,4 @@ UML/
 .vs/
 appsettings.json
 *.csproj.user
+.fake
