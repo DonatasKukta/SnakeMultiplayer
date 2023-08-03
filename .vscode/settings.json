@@ -1,3 +1,6 @@
 {
-    "dotnet.defaultSolution": "SnakeMultiplayer.sln"
+    "dotnet.defaultSolution": "SnakeMultiplayer.sln",
+    "FSharp.inlayHints.parameterNames": false,
+    "FSharp.inlayHints.enabled": false,
+    "editor.inlayHints.enabled": "offUnlessPressed"
 }
