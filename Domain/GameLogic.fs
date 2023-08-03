@@ -3,6 +3,7 @@
 open System
 
 module Functions =
+    open System.Collections.Concurrent
     //TODO: Move System.Random from Domain.
     let random = Random()
     let firstFrom = List.tryHead
@@ -18,9 +19,6 @@ module Functions =
         && coord.Y >= 0
         && coord.Y < cellCount
 
-    let setPendingDirection player direction =
-        { player with pendingDirection = direction }
-
     let update coordinate =
         function
         | Direction.Up -> { coordinate with X = coordinate.X + 1 }
@@ -30,7 +28,7 @@ module Functions =
         | _ -> coordinate
 
     /// Returns snake with updated body if it's new head is inside the board; otherwise snake with empty body
-    let move snake (board: Cell [,]) cellCount : Snake =
+    let move (board: Cell [,]) cellCount snake pendingDirection  : Snake =
         let body = snake.body
         let head = List.tryHead snake.body
         let last = List.tryLast snake.body
@@ -68,7 +66,7 @@ module Functions =
                 clearSnakeCells ()
                 Some { snake with body = List.empty }
 
-        Option.map2 update head snake.pendingDirection
+        Option.map2 update head pendingDirection
         |> Option.map clearSnakeIfHeadOutsideBoard
         |> Option.flatten
         |> Option.bind moveAndUpdateSnake
@@ -84,10 +82,12 @@ module Functions =
         | (x, y) when board.[x, y] = Cell.Empty -> { X = x; Y = y }
         | _ -> generateRandomFood board max
 
-    let applyPendingDirections (arena: Arena) =
+    let applyPendingDirections arena (pendingDirections :Map<string, Direction>) =
+        let moveSnake = move arena.board arena.settings.cellCount
+        let getPendingDirection name = Map.tryFind name pendingDirections
 
         let updatedPlayers =
-            Map.map (fun name snake -> move snake arena.board arena.settings.cellCount) arena.players
+            Map.map (fun name snake -> moveSnake snake (getPendingDirection name)) arena.players
 
         let newFood =
             match arena.board.[arena.food.X, arena.food.Y] with
@@ -121,49 +121,119 @@ module Functions =
         { name = name
           body = [ coordinate ]
           color = color
-          pendingDirection = None
           previousDirection = None }
 
     let deactivate snake =
         { snake with
             body = List.empty
-            pendingDirection = None
             previousDirection = None }
 
-    let canPlayerJoin arena = arena.players.Count < arena.maxPlayers
-
-    let isNameValid (name: string) arena : Result<string, string> =
-        if arena.players.Keys.Count >= 4 then
-            Error "Lobby is full"
-        elif String.IsNullOrWhiteSpace name then
-            Error "PlayerName cannot be empty"
-        elif Seq.forall Char.IsLetter (name.Trim().ToCharArray()) then
-            Error "PlayerName can only contain letters"
-        elif arena.players.Keys.Contains(name) then
-            Error $"Player {name} already exists in the lobby."
-        else
-            Ok "Welcome to the game"
-
-    let removePlayer name players = Map.remove name players
-
-    let addPlayer name arena =
+    let getInitialPositionAndColor arena = 
         let min = 1
         let max = arena.settings.cellCount - 2
 
-        let (color, coord) =
-            match arena.players.Keys.Count with
-            | 0 -> (GreenYellow, { X = min; Y = min })
-            | 1 -> (DodgerBlue, { X = min; Y = max })
-            | 2 -> (Orange, { X = max; Y = min })
-            | _ -> (MediumPurple, { X = max; Y = max })
+        match arena.players.Keys.Count with
+        | 0 -> Ok (GreenYellow,  { X = min; Y = min })
+        | 1 -> Ok (DodgerBlue,   { X = min; Y = max })
+        | 2 -> Ok (Orange,       { X = max; Y = min })
+        | 3 -> Ok (MediumPurple, { X = max; Y = max })
+        | _ -> Error "Only 4 players can play in same lobby."
 
-        { arena with players = Map.add name (createSnake name coord color) arena.players }
+    let canPlayerJoin (name: string) arena : Result<unit, string> =
+        if arena.players.Count >= arena.maxPlayers then
+            Error "Lobby is full"
+        elif String.IsNullOrWhiteSpace name then
+            Error "Player Name cannot be empty"
+        elif Seq.forall Char.IsLetter (name.Trim().ToCharArray()) then
+            Error "Player Name can only contain letters"
+        elif arena.players.Keys.Contains(name) then
+            Error $"Player {name} already exists in the lobby."
+        else 
+            Ok ()
 
-    let isActive arena = arena.players.Keys.Count > 0
+    let addPlayer name arena =
+        canPlayerJoin name arena
+        |> Result.bind (fun _ -> getInitialPositionAndColor arena)
+        |> Result.map  (fun (color, coord) -> createSnake name coord color)
+        |> Result.map  (fun newSnake -> Map.add name newSnake arena.players)
+        |> Result.map  (fun updatedPlayers -> {arena with players = updatedPlayers })
 
-    // TODO: Implement lobby actions.
-    // TODO: Is state (lobbies) needed here?
-    let lobbies: Map<string, Arena> = Map.empty
+    let isGameEnd (arena:Arena) : bool = 
+        let hostPlayerExists = Seq.exists (fun p -> p.name = arena.hostPlayer) arena.players.Values 
+        if not hostPlayerExists then true
+        else
 
-    let createLobby lobbyName hostName settings =
-        Map.add lobbyName (createArena hostName settings)
+        let isSnakeWithBody snake = not (Seq.isEmpty snake.body)
+        let isSinglePlayer = Seq.length arena.players = 1
+        let isMultiplayer = not isSinglePlayer
+        arena.players.Values 
+        |> Seq.filter isSnakeWithBody 
+        |> Seq.length
+        |> function
+            | 0 -> true
+            | 1 when isMultiplayer -> true
+            | 1 when isSinglePlayer -> false
+            | _ -> false
+            
+    type GameServer() =
+        let arenas = ConcurrentDictionary<string, Arena>()
+        let pendingDirections = PendingDirections()
+        
+        member this.CreateArena arenaId host =
+            let addArena newArena = 
+                match arenas.TryAdd(arenaId, newArena) with
+                | false -> Error $"Arena with name '{arenaId}' already exists."
+                | true -> Ok "Arena created succesfully"
+
+            createArena host {cellCount = 20; speed = Speed.Normal }
+            |> addPlayer host
+            |> Result.bind addArena
+            
+        member this.AddPlayer arenaId playerId = 
+            let mutable errorMessage : string option = None
+            //TODO: try to avoid failWith?
+            let addValueFactory = (fun _ -> failwith $"Arena '{arenaId}' does not yet exist.")
+            let updateValueFactory = 
+                Func<string, Arena, Arena>(
+                    fun _ existingArena -> 
+                        match addPlayer playerId existingArena with
+                        | Ok newArena -> newArena
+                        | Error message -> 
+                            errorMessage <- Some message
+                            existingArena
+                    )
+
+            arenas.AddOrUpdate(arenaId, addValueFactory, updateValueFactory) |> ignore
+            if Option.isNone errorMessage then Ok() 
+            else Error errorMessage
+
+        member private this.TryGet arenaId =
+            match arenas.TryGetValue(arenaId) with
+            | true, value -> Some(value)
+            | _ -> None
+
+        member private this.Update arenaId  arena = 
+            if not (arenas.ContainsKey arenaId) then false
+            else 
+            arenas.[arenaId] <- arena
+            true
+
+        member this.UpdateArena() =
+            ()
+
+        member this.RemoveArena() =
+            ()
+
+        member this.RemovePlayer() =
+            ()
+
+        member this.setPendingAction arenaId playerId (direction: Direction) =
+            pendingDirections[(arenaId, playerId)] <- direction
+
+        member this.getPendingAction arenaId playerId =
+            match pendingDirections.TryGetValue((arenaId, playerId)) with
+                | true, direction -> Some direction
+                | _ -> None
+
+        member this.removePendingAction arenaId playerId =
+            pendingDirections.TryRemove((arenaId, playerId))

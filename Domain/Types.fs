@@ -1,4 +1,5 @@
 ﻿namespace Domain
+open System.Collections.Concurrent
 
 type Speed =
     | NoSpeed = 0
@@ -29,7 +30,7 @@ type LobbyStates =
     | InGame
     | Closed
 
-type Settings = { cellCount: int; speed: int }
+type Settings = { cellCount: int; speed: Speed }
 
 type Coordinate = { X: int; Y: int }
 type Food = Coordinate
@@ -38,7 +39,6 @@ type Snake =
     { name: string
       body: list<Coordinate>
       color: Color
-      pendingDirection: Direction option
       previousDirection: Direction option }
 
 type Arena =
@@ -48,3 +48,8 @@ type Arena =
       food: Food
       maxPlayers: int
       hostPlayer: string }
+
+type arenaId = string
+type playerId = string
+
+type PendingDirections = ConcurrentDictionary<arenaId * playerId, Direction>
