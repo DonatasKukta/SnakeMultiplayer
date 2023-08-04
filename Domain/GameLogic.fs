@@ -126,6 +126,9 @@ module Functions =
           color = color
           previousDirection = None }
 
+    let removeSnake name arena =
+        Ok {arena with players = Map.remove name arena.players}
+
     let getInitialPositionAndColor arena = 
         let min = 1
         let max = arena.settings.cellCount - 2
@@ -238,6 +241,7 @@ module Functions =
             this.getPendingDirections arenaId
             |> applyPendingDirections
             |> this.Update arenaId 
+            // TODO: Generate status report.
 
         member this.RemoveArena arenaId =
             let mutable removedArena = Unchecked.defaultof<Arena>
@@ -248,8 +252,9 @@ module Functions =
             |> this.removePendingDirections arenaId
             Ok()
 
-        member this.RemovePlayer() =
-            ()
+        member this.RemovePlayer arenaId playerId =
+            removeSnake playerId
+            |> this.Update arenaId
 
         member this.setPendingAction arenaId playerId (direction: Direction) =
             pendingDirections[(arenaId, playerId)] <- direction
