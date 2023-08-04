@@ -27,6 +27,11 @@ module Functions =
         | Direction.Right -> { coordinate with Y = coordinate.Y + 1 }
         | _ -> coordinate
 
+    let emptySnake snake =
+        { snake with
+            body = List.empty
+            previousDirection = None }
+
     /// Returns snake with updated body if it's new head is inside the board; otherwise snake with empty body
     let move (board: Cell [,]) cellCount snake pendingDirection  : Snake =
         let body = snake.body
@@ -46,7 +51,7 @@ module Functions =
         let clearSnakeIfHeadOutsideBoard newHead =
             if isInsideBoard newHead cellCount then
                 Some newHead
-            else
+            else // TODO: Is this needed?
                 clearSnakeCells ()
                 None
 
@@ -62,15 +67,17 @@ module Functions =
                     setCell last.Value Cell.Empty
 
                 Some { snake with body = newHead :: getNewBody false }
-            | _ ->
-                clearSnakeCells ()
-                Some { snake with body = List.empty }
+            | _ -> None
+
+        let deactivateSnake = 
+            clearSnakeCells()
+            emptySnake snake
 
         Option.map2 update head pendingDirection
         |> Option.map clearSnakeIfHeadOutsideBoard
         |> Option.flatten
         |> Option.bind moveAndUpdateSnake
-        |> Option.defaultValue { snake with body = List.empty }
+        |> Option.defaultValue deactivateSnake
 
     let generateFoodAnywhere max =
         { X = random.Next(0, max)
@@ -82,22 +89,18 @@ module Functions =
         | (x, y) when board.[x, y] = Cell.Empty -> { X = x; Y = y }
         | _ -> generateRandomFood board max
 
-    let applyPendingDirections arena (pendingDirections :Map<string, Direction>) =
+    let applyPendingDirections pendingDirections arena  =
         let moveSnake = move arena.board arena.settings.cellCount
         let getPendingDirection name = Map.tryFind name pendingDirections
 
         let updatedPlayers =
             Map.map (fun name snake -> moveSnake snake (getPendingDirection name)) arena.players
 
-        let newFood =
-            match arena.board.[arena.food.X, arena.food.Y] with
-            | Cell.Food -> arena.food
-            | Cell.Snake -> generateRandomFood arena.board arena.settings.cellCount
-            | _ -> failwith "Previous food coordinate points to empty Cell, which is invalid."
-
-        { arena with
-            food = newFood
-            players = updatedPlayers }
+        match arena.board.[arena.food.X, arena.food.Y] with
+            | Cell.Food -> Ok arena.food
+            | Cell.Snake -> Ok <| generateRandomFood arena.board arena.settings.cellCount
+            | _ -> Error "Previous food coordinate points to empty Cell, which is invalid."
+        |> Result.map (fun newFood ->  { arena with food = newFood; players = updatedPlayers })
 
     let emptyBoard cellCount = Array2D.zeroCreate cellCount cellCount
 
@@ -122,11 +125,6 @@ module Functions =
           body = [ coordinate ]
           color = color
           previousDirection = None }
-
-    let deactivate snake =
-        { snake with
-            body = List.empty
-            previousDirection = None }
 
     let getInitialPositionAndColor arena = 
         let min = 1
@@ -176,53 +174,79 @@ module Functions =
             | _ -> false
             
     type GameServer() =
-        let arenas = ConcurrentDictionary<string, Arena>()
-        let pendingDirections = PendingDirections()
+        let arenas = ConcurrentDictionary<ArenaId, Arena>()
+        let pendingDirections = ConcurrentDictionary<ArenaId * PlayerId, Direction>()
         
+        member this.getPendingDirection arenaId playerId =
+            match pendingDirections.TryGetValue((arenaId, playerId)) with
+                | true, direction -> Some direction
+                | _ -> None
+
+        member this.getPendingDirections arenaId =
+            let getPlayerWithDirection playerId = 
+                this.getPendingDirection arenaId playerId 
+                |> Option.map (fun direction -> (playerId , direction))
+                
+            this.TryGetArena arenaId
+            |> Option.map (fun arena -> arena.players.Keys)
+            |> Option.map (Seq.map getPlayerWithDirection)
+            |> Option.map (Seq.choose id)
+            |> Option.map Map.ofSeq
+            |> Option.defaultValue Map.empty
+
+        member this.removePendingDirections arenaId playerIds =
+            playerIds
+            |> Seq.iter (fun playerId -> pendingDirections.TryRemove((arenaId, playerId)) |> ignore)
+
         member this.CreateArena arenaId host =
             let addArena newArena = 
                 match arenas.TryAdd(arenaId, newArena) with
                 | false -> Error $"Arena with name '{arenaId}' already exists."
                 | true -> Ok "Arena created succesfully"
-
+            //TODO: Default arena settings shouldn't be hardcoded. 
             createArena host {cellCount = 20; speed = Speed.Normal }
             |> addPlayer host
             |> Result.bind addArena
             
+        //TODO: Try to refactor and  avoid failWith and errorMessage.
         member this.AddPlayer arenaId playerId = 
-            let mutable errorMessage : string option = None
-            //TODO: try to avoid failWith?
-            let addValueFactory = (fun _ -> failwith $"Arena '{arenaId}' does not yet exist.")
-            let updateValueFactory = 
-                Func<string, Arena, Arena>(
-                    fun _ existingArena -> 
-                        match addPlayer playerId existingArena with
-                        | Ok newArena -> newArena
-                        | Error message -> 
-                            errorMessage <- Some message
-                            existingArena
-                    )
+            this.Update arenaId (addPlayer playerId)
 
-            arenas.AddOrUpdate(arenaId, addValueFactory, updateValueFactory) |> ignore
-            if Option.isNone errorMessage then Ok() 
-            else Error errorMessage
-
-        member private this.TryGet arenaId =
+        member private this.TryGetArena arenaId =
             match arenas.TryGetValue(arenaId) with
             | true, value -> Some(value)
             | _ -> None
 
-        member private this.Update arenaId  arena = 
-            if not (arenas.ContainsKey arenaId) then false
-            else 
-            arenas.[arenaId] <- arena
-            true
+        member private this.Update arenaId  updateArenaFunc = 
+            let mutable result : Result<unit, string> = Ok()
+            let saveError errorStr = 
+                result <- Error errorStr
+                errorStr
+            
+            let addValueFactory = (fun _ -> failwith $"Arena '{arenaId}' does not yet exist.")
+            let updateValueFactory = 
+                Func<string, Arena, Arena>(
+                    fun _ oldArena -> 
+                    updateArenaFunc oldArena 
+                    |> Result.mapError saveError
+                    |> Result.defaultValue oldArena) 
+                
+            arenas.AddOrUpdate(arenaId, addValueFactory, updateValueFactory) |> ignore
+            result
 
-        member this.UpdateArena() =
-            ()
+        member this.UpdateArena arenaId =
+            this.getPendingDirections arenaId
+            |> applyPendingDirections
+            |> this.Update arenaId 
 
-        member this.RemoveArena() =
-            ()
+        member this.RemoveArena arenaId =
+            let mutable removedArena = Unchecked.defaultof<Arena>
+            if not (arenas.TryRemove(arenaId, &removedArena)) then
+                Error $"Arena '{arenaId}' does not exist."
+            else
+            removedArena.players.Keys
+            |> this.removePendingDirections arenaId
+            Ok()
 
         member this.RemovePlayer() =
             ()
@@ -230,10 +254,3 @@ module Functions =
         member this.setPendingAction arenaId playerId (direction: Direction) =
             pendingDirections[(arenaId, playerId)] <- direction
 
-        member this.getPendingAction arenaId playerId =
-            match pendingDirections.TryGetValue((arenaId, playerId)) with
-                | true, direction -> Some direction
-                | _ -> None
-
-        member this.removePendingAction arenaId playerId =
-            pendingDirections.TryRemove((arenaId, playerId))

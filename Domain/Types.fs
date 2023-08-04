@@ -49,7 +49,5 @@ type Arena =
       maxPlayers: int
       hostPlayer: string }
 
-type arenaId = string
-type playerId = string
-
-type PendingDirections = ConcurrentDictionary<arenaId * playerId, Direction>
+type ArenaId = string
+type PlayerId = string
