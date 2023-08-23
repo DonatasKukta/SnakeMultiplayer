@@ -1,6 +1,7 @@
 ﻿namespace Domain
 
 open System
+open FromServerMappings
 
 module Functions =
     open System.Collections.Concurrent
@@ -10,8 +11,13 @@ module Functions =
     let lastFrom = List.tryLast
     let firstAndLast list = (firstFrom list, lastFrom list)
     let itself x = x
-    let OptionOfBool x b = if b then Some x else None
+    let optionOfBool x b = if b then Some x else None
     let createOptionUnit x = Option.map (fun y -> (x, y))
+
+    let optionToResult errValue =
+        function
+        | Some value -> Ok value
+        | None -> Error errValue
 
     let isInsideBoard coord cellCount =
         coord.X >= 0
@@ -33,7 +39,7 @@ module Functions =
             previousDirection = None }
 
     /// Returns snake with updated body if it's new head is inside the board; otherwise snake with empty body
-    let move (board: Cell [,]) cellCount snake pendingDirection  : Snake =
+    let move (board: Cell [,]) cellCount snake pendingDirection : Snake =
         let body = snake.body
         let head = List.tryHead snake.body
         let last = List.tryLast snake.body
@@ -69,8 +75,8 @@ module Functions =
                 Some { snake with body = newHead :: getNewBody false }
             | _ -> None
 
-        let deactivateSnake = 
-            clearSnakeCells()
+        let deactivateSnake =
+            clearSnakeCells ()
             emptySnake snake
 
         Option.map2 update head pendingDirection
@@ -89,7 +95,7 @@ module Functions =
         | (x, y) when board.[x, y] = Cell.Empty -> { X = x; Y = y }
         | _ -> generateRandomFood board max
 
-    let applyPendingDirections pendingDirections arena  =
+    let applyPendingDirections pendingDirections arena =
         let moveSnake = move arena.board arena.settings.cellCount
         let getPendingDirection name = Map.tryFind name pendingDirections
 
@@ -97,10 +103,15 @@ module Functions =
             Map.map (fun name snake -> moveSnake snake (getPendingDirection name)) arena.players
 
         match arena.board.[arena.food.X, arena.food.Y] with
-            | Cell.Food -> Ok arena.food
-            | Cell.Snake -> Ok <| generateRandomFood arena.board arena.settings.cellCount
-            | _ -> Error "Previous food coordinate points to empty Cell, which is invalid."
-        |> Result.map (fun newFood ->  { arena with food = newFood; players = updatedPlayers })
+        | Cell.Food -> Ok arena.food
+        | Cell.Snake ->
+            Ok
+            <| generateRandomFood arena.board arena.settings.cellCount
+        | _ -> Error "Previous food coordinate points to empty Cell, which is invalid."
+        |> Result.map (fun newFood ->
+            { arena with
+                food = newFood
+                players = updatedPlayers })
 
     let emptyBoard cellCount = Array2D.zeroCreate cellCount cellCount
 
@@ -127,17 +138,17 @@ module Functions =
           previousDirection = None }
 
     let removeSnake name arena =
-        Ok {arena with players = Map.remove name arena.players}
+        Ok { arena with players = Map.remove name arena.players }
 
-    let getInitialPositionAndColor arena = 
+    let getInitialPositionAndColor arena =
         let min = 1
         let max = arena.settings.cellCount - 2
 
         match arena.players.Keys.Count with
-        | 0 -> Ok (GreenYellow,  { X = min; Y = min })
-        | 1 -> Ok (DodgerBlue,   { X = min; Y = max })
-        | 2 -> Ok (Orange,       { X = max; Y = min })
-        | 3 -> Ok (MediumPurple, { X = max; Y = max })
+        | 0 -> Ok(GreenYellow, { X = min; Y = min })
+        | 1 -> Ok(DodgerBlue, { X = min; Y = max })
+        | 2 -> Ok(Orange, { X = max; Y = min })
+        | 3 -> Ok(MediumPurple, { X = max; Y = max })
         | _ -> Error "Only 4 players can play in same lobby."
 
     let canPlayerJoin (name: string) arena : Result<unit, string> =
@@ -149,47 +160,51 @@ module Functions =
             Error "Player Name can only contain letters"
         elif arena.players.Keys.Contains(name) then
             Error $"Player {name} already exists in the lobby."
-        else 
-            Ok ()
+        else
+            Ok()
 
     let addPlayer name arena =
         canPlayerJoin name arena
         |> Result.bind (fun _ -> getInitialPositionAndColor arena)
-        |> Result.map  (fun (color, coord) -> createSnake name coord color)
-        |> Result.map  (fun newSnake -> Map.add name newSnake arena.players)
-        |> Result.map  (fun updatedPlayers -> {arena with players = updatedPlayers })
+        |> Result.map (fun (color, coord) -> createSnake name coord color)
+        |> Result.map (fun newSnake -> Map.add name newSnake arena.players)
+        |> Result.map (fun updatedPlayers -> { arena with players = updatedPlayers })
 
-    let isGameEnd (arena:Arena) : bool = 
-        let hostPlayerExists = Seq.exists (fun p -> p.name = arena.hostPlayer) arena.players.Values 
-        if not hostPlayerExists then true
+    let isGameEnd (arena: Arena) : bool =
+        let hostPlayerExists =
+            Seq.exists (fun p -> p.name = arena.hostPlayer) arena.players.Values
+
+        if not hostPlayerExists then
+            true
         else
 
-        let isSnakeWithBody snake = not (Seq.isEmpty snake.body)
-        let isSinglePlayer = Seq.length arena.players = 1
-        let isMultiplayer = not isSinglePlayer
-        arena.players.Values 
-        |> Seq.filter isSnakeWithBody 
-        |> Seq.length
-        |> function
-            | 0 -> true
-            | 1 when isMultiplayer -> true
-            | 1 when isSinglePlayer -> false
-            | _ -> false
-            
+            let isSnakeWithBody snake = not (Seq.isEmpty snake.body)
+            let isSinglePlayer = Seq.length arena.players = 1
+            let isMultiplayer = not isSinglePlayer
+
+            arena.players.Values
+            |> Seq.filter isSnakeWithBody
+            |> Seq.length
+            |> function
+                | 0 -> true
+                | 1 when isMultiplayer -> true
+                | 1 when isSinglePlayer -> false
+                | _ -> false
+
     type GameServer() =
         let arenas = ConcurrentDictionary<ArenaId, Arena>()
         let pendingDirections = ConcurrentDictionary<ArenaId * PlayerId, Direction>()
-        
+
         member this.getPendingDirection arenaId playerId =
             match pendingDirections.TryGetValue((arenaId, playerId)) with
-                | true, direction -> Some direction
-                | _ -> None
+            | true, direction -> Some direction
+            | _ -> None
 
         member this.getPendingDirections arenaId =
-            let getPlayerWithDirection playerId = 
-                this.getPendingDirection arenaId playerId 
-                |> Option.map (fun direction -> (playerId , direction))
-                
+            let getPlayerWithDirection playerId =
+                this.getPendingDirection arenaId playerId
+                |> Option.map (fun direction -> (playerId, direction))
+
             this.TryGetArena arenaId
             |> Option.map (fun arena -> arena.players.Keys)
             |> Option.map (Seq.map getPlayerWithDirection)
@@ -199,20 +214,21 @@ module Functions =
 
         member this.removePendingDirections arenaId playerIds =
             playerIds
-            |> Seq.iter (fun playerId -> pendingDirections.TryRemove((arenaId, playerId)) |> ignore)
+            |> Seq.iter (fun playerId ->
+                pendingDirections.TryRemove((arenaId, playerId))
+                |> ignore)
 
         member this.CreateArena arenaId host =
-            let addArena newArena = 
+            let addArena newArena =
                 match arenas.TryAdd(arenaId, newArena) with
                 | false -> Error $"Arena with name '{arenaId}' already exists."
                 | true -> Ok "Arena created succesfully"
-            //TODO: Default arena settings shouldn't be hardcoded. 
-            createArena host {cellCount = 20; speed = Speed.Normal }
+            //TODO: Default arena settings shouldn't be hardcoded.
+            createArena host { cellCount = 20; speed = Speed.Normal }
             |> addPlayer host
             |> Result.bind addArena
-            
-        //TODO: Try to refactor and  avoid failWith and errorMessage.
-        member this.AddPlayer arenaId playerId = 
+
+        member this.AddPlayer arenaId playerId =
             this.Update arenaId (addPlayer playerId)
 
         member private this.TryGetArena arenaId =
@@ -220,42 +236,48 @@ module Functions =
             | true, value -> Some(value)
             | _ -> None
 
-        member private this.Update arenaId  updateArenaFunc = 
-            let mutable result : Result<unit, string> = Ok()
-            let saveError errorStr = 
+        //TODO: Try to refactor and  avoid failWith and errorMessage.
+        member private this.Update arenaId updateArenaFunc =
+            let mutable result: Result<unit, string> = Ok()
+
+            let saveError errorStr =
                 result <- Error errorStr
                 errorStr
-            
+
             let addValueFactory = (fun _ -> failwith $"Arena '{arenaId}' does not yet exist.")
-            let updateValueFactory = 
-                Func<string, Arena, Arena>(
-                    fun _ oldArena -> 
-                    updateArenaFunc oldArena 
+
+            let updateValueFactory =
+                Func<string, Arena, Arena> (fun _ oldArena ->
+                    updateArenaFunc oldArena
                     |> Result.mapError saveError
-                    |> Result.defaultValue oldArena) 
-                
-            arenas.AddOrUpdate(arenaId, addValueFactory, updateValueFactory) |> ignore
+                    |> Result.defaultValue oldArena)
+
+            arenas.AddOrUpdate(arenaId, addValueFactory, updateValueFactory)
+            |> ignore
+
             result
 
         member this.UpdateArena arenaId =
             this.getPendingDirections arenaId
             |> applyPendingDirections
-            |> this.Update arenaId 
-            // TODO: Generate status report.
+            |> this.Update arenaId
+            |> Result.map (fun () -> this.TryGetArena arenaId)
+            |> Result.map (Option.map arenaToArenaStatusDto)
+            |> Result.bind (optionToResult $"Arena {arenaId} not found")
 
         member this.RemoveArena arenaId =
             let mutable removedArena = Unchecked.defaultof<Arena>
+
             if not (arenas.TryRemove(arenaId, &removedArena)) then
                 Error $"Arena '{arenaId}' does not exist."
             else
-            removedArena.players.Keys
-            |> this.removePendingDirections arenaId
-            Ok()
+                removedArena.players.Keys
+                |> this.removePendingDirections arenaId
+
+                Ok()
 
         member this.RemovePlayer arenaId playerId =
-            removeSnake playerId
-            |> this.Update arenaId
+            removeSnake playerId |> this.Update arenaId
 
         member this.setPendingAction arenaId playerId (direction: Direction) =
             pendingDirections[(arenaId, playerId)] <- direction
-

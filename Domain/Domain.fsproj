@@ -7,8 +7,8 @@
 
   <ItemGroup>
     <Compile Include="Types.fs" />
-    <Compile Include="GameLogic.fs" />
     <Compile Include="Mappings.fs" />
+    <Compile Include="GameLogic.fs" />
   </ItemGroup>
 
   <ItemGroup>
