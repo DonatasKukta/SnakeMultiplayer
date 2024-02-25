@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+
+using Domain;
 using SnakeMultiplayer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,7 +16,8 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
 
-builder.Services.AddSingleton<IGameServerService, GameServerService>();
+builder.Services.AddTransient<Functions.GameServer>();
+//builder.Services.AddSingleton<IGameServerService, GameServerService>();
 builder.Services.AddSingleton<ITimerService, TimerService>();
 builder.Services.AddTransient<IServerHub, ServerHub>();
 builder.Services.AddSignalR();

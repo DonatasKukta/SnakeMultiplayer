@@ -191,9 +191,21 @@ module Functions =
                 | 1 when isSinglePlayer -> false
                 | _ -> false
 
-    type GameServer() =
+    type public GameServer() =
         let arenas = ConcurrentDictionary<ArenaId, Arena>()
         let pendingDirections = ConcurrentDictionary<ArenaId * PlayerId, Direction>()
+
+        member this.isHost arenaId playerId =
+            this.TryGetArena arenaId
+            |> Option.map (fun arena -> arena.hostPlayer)
+            |> Option.map playerId.Equals
+            |> Option.defaultValue false
+
+        member this.setSettings arenaId newSettings =
+            let setSettingsFunc arena =
+                Result.Ok { arena with settings = newSettings }
+
+            this.Update arenaId setSettingsFunc
 
         member this.getPendingDirection arenaId playerId =
             match pendingDirections.TryGetValue((arenaId, playerId)) with
@@ -244,7 +256,7 @@ module Functions =
                 result <- Error errorStr
                 errorStr
 
-            let addValueFactory = (fun _ -> failwith $"Arena '{arenaId}' does not yet exist.")
+            let addValueFactory = (fun _ -> failwith $"Arena '{arenaId}' does not exist.")
 
             let updateValueFactory =
                 Func<string, Arena, Arena> (fun _ oldArena ->
@@ -281,3 +293,7 @@ module Functions =
 
         member this.setPendingAction arenaId playerId (direction: Direction) =
             pendingDirections[(arenaId, playerId)] <- direction
+
+        member this.GetPlayers arenaId =
+            this.TryGetArena arenaId
+            |> Option.map arenaToPlayerStatus

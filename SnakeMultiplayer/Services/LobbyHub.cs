@@ -1,39 +1,38 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
 using JsonLibrary.FromClient;
+using JsonLibrary.FromServer;
 
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.FSharp.Core;
+
+using static Domain.Functions;
 
 namespace SnakeMultiplayer.Services;
 
 public class LobbyHub : Hub
 {
-    string PlayerName
+    string PlayerId
     {
-        get => GetContextItemOrDefault<string>("PlayerName");
-        set => Context.Items["PlayerName"] = value;
+        get => GetContextItemOrDefault<string>("playerId");
+        set => Context.Items["playerId"] = value;
     }
 
-    string LobbyName
+    string ArenaId
     {
         get => GetContextItemOrDefault<string>("LobbyName");
         set => Context.Items["LobbyName"] = value;
     }
 
-    ILobbyService LobbyService
-    {
-        get => GetContextItemOrDefault<ILobbyService>("LobbyService");
-        set => Context.Items["LobbyService"] = value;
-    }
-
-    readonly IGameServerService GameServer;
+    readonly GameServer GameServer;
     readonly ITimerService TimerService;
     readonly IServerHub ServerHub;
 
-    public LobbyHub(IGameServerService gameServer, ITimerService timerService, IServerHub serverHub)
+    public LobbyHub(GameServer gameServer, ITimerService timerService, IServerHub serverHub)
     {
         GameServer = gameServer;
         TimerService = timerService;
@@ -48,67 +47,67 @@ public class LobbyHub : Hub
 
     public override Task OnDisconnectedAsync(Exception? exception)
     {
-        if (LobbyService == null)
-            return base.OnDisconnectedAsync(exception);
+        //if (LobbyService == null)
+        //    return base.OnDisconnectedAsync(exception);
+        //
+        //var players = LobbyService.RemovePlayer(playerId);
 
-        var players = LobbyService.RemovePlayer(PlayerName);
+        //TODO: Catch exception
+        var result = GameServer.RemovePlayer(ArenaId, PlayerId);
 
-        if (players == null)
-        {
-            GameServer.RemoveLobby(LobbyName);
-            ServerHub.ExitGame(LobbyName, "Host player left the game.");
-        }
-        else if (players.Any())
-            ServerHub.SendPlayerStatusUpdate(LobbyName, players, PlayerName);
+        ServerHub.ExitGame(ArenaId, "Host player left the game.");
+        var players = GameServer.GetPlayers(ArenaId);
+
+        if (FSharpOption<IEnumerable<Player>>.get_IsSome(players))
+            ServerHub.SendPlayerStatusUpdate(ArenaId, players.Value, PlayerId);
         else
-            ServerHub.SendEndGame(LobbyName);
+            ServerHub.ExitGame(ArenaId, "No players active in lobby.");
 
         return base.OnDisconnectedAsync(exception);
     }
 
-    public async Task JoinLobby(string lobby, string playerName)
+    public async Task JoinLobby(string arenaId, string playerId)
     {
-        LobbyName = lobby;
-        PlayerName = playerName;
-        await Groups.AddToGroupAsync(Context.ConnectionId, lobby);
-        GameServer.AddPlayerToLobby(LobbyName, PlayerName);
-        LobbyService = GameServer.GetLobbyService(lobby);
+        ArenaId = arenaId;
+        PlayerId = playerId;
+        await Groups.AddToGroupAsync(Context.ConnectionId, arenaId);
+        GameServer.AddPlayer(ArenaId, PlayerId);
 
-        var players = LobbyService.GetAllPlayerStatus();
-        await ServerHub.SendPlayerStatusUpdate(LobbyName, players);
+        var players = GameServer.GetPlayers(ArenaId).Value.ToList();
+        await ServerHub.SendPlayerStatusUpdate(ArenaId, players);
     }
 
     public async Task UpdateLobbySettings(JsonElement input)
     {
-        if (!LobbyService.IsHost(PlayerName))
+        if (!GameServer.isHost(ArenaId, PlayerId))
             return;
         var settingsStr = input.GetRawText();
 
-        var settings = Settings.Deserialize(settingsStr);
-        if (settings == null)
+        var settingsDto = Settings.Deserialize(settingsStr);
+        if (settingsDto == null)
             return;
-
-        var newSettings = LobbyService.SetSettings(settings);
-        await ServerHub.SendSettingsUpdate(LobbyName, newSettings);
+        var settings = Domain.settingsDtoToSettings(settingsDto);
+        var newSettings = GameServer.setSettings(ArenaId, settings);
+        await ServerHub.SendSettingsUpdate(ArenaId, settingsDto);
     }
 
     public async Task InitiateGameStart()
     {
-        if (!LobbyService.IsHost(PlayerName))
+        if (!LobbyService.IsHost(PlayerId))
             return;
 
         var arenaStatus = LobbyService.InitiateGameStart();
-        await ServerHub.InitiateGameStart(LobbyName, arenaStatus);
+        await ServerHub.InitiateGameStart(ArenaId, arenaStatus);
 
         await Task.Delay(2000);
 
         if (!LobbyService.IsNoSpeed)
-            TimerService.StartGame(LobbyName, LobbyService.Speed);
+            TimerService.StartGame(ArenaId, LobbyService.Speed);
     }
 
     public void UpdatePlayerState(MoveDirection direction)
     {
-        LobbyService.OnPlayerUpdate(PlayerName, direction);
+        LobbyService.OnPlayerUpdate(PlayerId, direction);
 
         if (!LobbyService.IsNoSpeed)
             return;
@@ -116,9 +115,9 @@ public class LobbyHub : Hub
         var status = LobbyService.UpdateLobbyState();
 
         if (status == null)
-            _ = ServerHub.SendEndGame(LobbyName);
+            _ = ServerHub.SendEndGame(ArenaId);
         else
-            _ = ServerHub.SendArenaStatusUpdate(LobbyName, status);
+            _ = ServerHub.SendArenaStatusUpdate(ArenaId, status);
     }
 
     T GetContextItemOrDefault<T>(string key) =>
