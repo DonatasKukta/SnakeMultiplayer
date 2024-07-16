@@ -113,6 +113,25 @@
         }
     }
 
+    $(document).ready(function () {
+        $('#ArrowUpBtn').click(function () {
+            gameController.sendMovementUpdate(MoveDirection.Up);
+        });
+        $('#ArrowLeftBtn').click(function () {
+            gameController.sendMovementUpdate(MoveDirection.Left);
+        });
+        $('#ArrowRightBtn').click(function () {
+            gameController.sendMovementUpdate(MoveDirection.Right);
+        });
+        $('#ArrowDownBtn').click(function () {
+            gameController.sendMovementUpdate(MoveDirection.Down);
+        });
+    });
+
+    if (!window.matchMedia("(min-width: 700px)").matches) {
+        document.getElementById("arrowButtons").style.display = "block";
+    }
+
     function reSet() {
         onResize();
         gameController.setCellContainer(new CellGridContainer(cellCount, baseCell, CanvasContext, TLborder, BRborder));

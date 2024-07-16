@@ -15,13 +15,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.14/signalr.min.js"></script>
 </head>
 <body>
-    <nav id="navigation_bar"class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-            <div class="navbar-nav">
-                <a class="nav-item nav-link" asp-area="" asp-controller="Lobby" asp-action="JoinLobby">Join</a>
-                <a class="nav-item nav-link" asp-area="" asp-controller="Lobby" asp-action="CreateLobby">Create</a>
-                <a class="nav-item nav-link" asp-area="" asp-controller="Home" asp-action="About">About</a>
-            </div>
+    <nav id="navigation_bar" class="navbar navbar-expand-md navbar-light bg-light">
+        <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+        <a class="nav-item nav-link bg-light" asp-area="" asp-controller="Lobby" asp-action="JoinLobby">Join</a>
+        <a class="nav-item nav-link bg-light" asp-area="" asp-controller="Lobby" asp-action="CreateLobby">Create</a>
+        <a class="nav-item nav-link bg-light" asp-area="" asp-controller="Home" asp-action="About">About</a>
     </nav>
 
     <div class="container" style="height:100vh">
